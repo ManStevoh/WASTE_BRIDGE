@@ -166,6 +166,8 @@ Representative REST endpoints:
 | `POST` | `/api/payment/initiate` | Start payment / escrow flow. |
 | `GET` | `/api/user/wallet` | Wallet balance and related data. |
 
+For **full request/response schemas, Flutter client paths, enums, and migration notes**, see [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md).
+
 ---
 
 ## 8. Database Schema (Detailed)
@@ -182,6 +184,8 @@ Conceptual tables and key fields:
 | **notifications** | `id`, `user_id`, `message`, `status` |
 
 Indexes, foreign keys, and soft deletes should be defined in Laravel migrations according to query patterns and compliance needs.
+
+For the **full target schema** (column types, enums, relationships, roadmap tables), see [`DATABASE_STRUCTURE.md`](DATABASE_STRUCTURE.md).
 
 ---
 

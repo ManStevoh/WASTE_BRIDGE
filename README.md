@@ -2,6 +2,15 @@
 
 A new Flutter project.
 
+## Documentation
+
+Project documentation lives in [`DOCS/`](DOCS/):
+
+- [`DOCS/DOCUMENTATION.md`](DOCS/DOCUMENTATION.md) — full developer and enterprise documentation
+- [`DOCS/DATABASE_STRUCTURE.md`](DOCS/DATABASE_STRUCTURE.md) — canonical database tables, enums, and relationships
+- [`DOCS/IMPLEMENTATION_PLAN.md`](DOCS/IMPLEMENTATION_PLAN.md) — phased implementation roadmap
+- [`DOCS/UI_GUIDE.md`](DOCS/UI_GUIDE.md) — Flutter UI structure and conventions
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

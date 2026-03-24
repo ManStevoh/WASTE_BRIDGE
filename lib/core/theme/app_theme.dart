@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:waste_bridge/core/theme/app_tokens.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -19,14 +20,14 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.input),
           borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
       ),
@@ -50,7 +51,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
         ),
       ),
     );
