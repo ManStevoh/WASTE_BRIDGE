@@ -13,7 +13,7 @@ This guide describes **how the Flutter UI is structured today**, **design conven
 | UI framework | **Flutter** with **Material 3** | `useMaterial3: true` in `AppTheme` |
 | State | **Riverpod** | `ConsumerWidget` / `ConsumerStatefulWidget`, `StateNotifier`, `AsyncValue` |
 | Routing | **go_router** | Declarative routes; `context.go`, `context.push` |
-| Icons | **Material Icons** | `Icons.*` from `material.dart` — see [§9](#9-icons-and-visual-language) |
+| Icons | **Material Icons** | `Icons.*` from `material.dart` — see [§14](#14-icons-and-visual-language) |
 
 **Principles:**
 
@@ -21,7 +21,7 @@ This guide describes **how the Flutter UI is structured today**, **design conven
 2. **Tokens second** — Prefer `AppSpacing` / `AppRadius` from `lib/core/theme/app_tokens.dart` over new magic numbers for padding and corners.
 3. **Async UI** — Lists and dashboards driven by providers use `AsyncValue.when`: `data`, `loading`, `error` (prefer `CenterState` with an error icon).
 4. **Shared building blocks** — Reuse `AppSectionCard` and `CenterState` from `lib/features/shared/app_widgets.dart` before adding one-off layouts.
-5. **Navigation** — New screens get a `GoRoute` in `lib/routes/app_router.dart`; use path parameters for IDs (`/generator/track/:id`). Follow [§5.1](#51-navigation-ux-rules).
+5. **Navigation** — New screens get a `GoRoute` in `lib/routes/app_router.dart`; use path parameters for IDs (`/generator/track/:id`). Follow [§7.1](#71-navigation-ux-rules).
 
 ---
 
@@ -45,7 +45,40 @@ This guide describes **how the Flutter UI is structured today**, **design conven
 
 ---
 
-## 3. Design tokens
+## 3. Design system overview
+
+This section is the **design identity** layer: why colors and type behave as they do. It sits above raw tokens ([§4](#4-design-tokens)) so designers and developers align before shipping screens.
+
+### Brand personality
+
+- **Clean** — Plenty of whitespace, clear hierarchy, no visual noise.
+- **Eco-friendly** — Green-led palette; copy and imagery reinforce waste reduction and circular economy.
+- **Trustworthy** — Predictable patterns, honest status (sync, errors), no dark patterns.
+- **Community-focused** — Roles (generator, collector, recycler) feel distinct but part of one system.
+
+### Core color meaning (semantic)
+
+| Color role | Meaning in Waste Bridge | Typical use |
+|------------|-------------------------|-------------|
+| **Green** (`ColorScheme.primary`, seed-based greens) | Sustainability, success, forward progress | CTAs, positive status, brand emphasis |
+| **Amber / warning tones** (`ColorScheme.tertiary` or explicit warning where used) | Caution, waste-handling issues, “needs attention” | Banners, non-blocking warnings |
+| **Red** (`ColorScheme.error`) | Errors, destructive actions, blocking problems | Form errors, failed operations, delete/destructive confirms |
+
+Always pair color with **icon + text** for accessibility — see [§18](#18-strings-localization-and-accessibility).
+
+### Typography hierarchy
+
+| Layer | Role | Flutter / Material mapping |
+|-------|------|----------------------------|
+| **Headings** | Screen titles, section titles | Bold emphasis; `textTheme.titleLarge` / `titleMedium` for app bar and card headers |
+| **Body** | Primary reading content | `bodyLarge` / `bodyMedium` — default for descriptions and list subtitles |
+| **Captions / labels** | Secondary metadata, hints, timestamps | `bodySmall`, `labelLarge`, `labelSmall` — lower contrast acceptable, not for primary facts only |
+
+Prefer theme text styles over hard-coded `TextStyle` so light/dark and future theming stay consistent.
+
+---
+
+## 4. Design tokens
 
 **Source file:** `lib/core/theme/app_tokens.dart`
 
@@ -59,7 +92,21 @@ This guide describes **how the Flutter UI is structured today**, **design conven
 
 ---
 
-## 4. Project layout (UI-related)
+## 5. Visual consistency rules
+
+Small rules that prevent **UI drift** as the codebase grows.
+
+| Rule | Standard |
+|------|----------|
+| **Spacing between major sections** | Prefer **`AppSpacing.md`** (16) between stacked sections on a screen; use `lg` / `xl` when separating distinct “chunks” (e.g. auth vs footer). |
+| **Card internals** | Match `AppSectionCard` padding (**14** in shared widget) and keep list rows inside cards visually aligned — do not mix arbitrary paddings on the same dashboard. |
+| **Icon sizes** | **20** or **24** logical pixels for standard inline and list icons; **48** for empty/error hero icons in `CenterState`. |
+| **Button height / touch** | Use Material 3 defaults; ensure custom tap targets respect **`AppTouchTarget.minSize`** (48). |
+| **Horizontal screen padding** | **`AppSpacing.md`** body padding unless a full-bleed pattern is intentional (e.g. maps). |
+
+---
+
+## 6. Project layout (UI-related)
 
 ```
 lib/
@@ -83,7 +130,7 @@ New UI code should live under `features/<area>/` unless it is truly cross-cuttin
 
 ---
 
-## 5. Navigation
+## 7. Navigation
 
 **Configuration:** `lib/routes/app_router.dart`
 
@@ -108,7 +155,7 @@ flowchart LR
   home --> nested["Nested routes e.g. /generator/request-pickup"]
 ```
 
-### 5.1 Navigation UX rules
+### 7.1 Navigation UX rules
 
 | Rule | Rationale |
 |------|-----------|
@@ -119,7 +166,33 @@ flowchart LR
 
 ---
 
-## 6. Reusable widgets
+## 8. UX structure
+
+How users **move through the app** at a high level. Use this to avoid ad-hoc navigation and inconsistent entry points.
+
+### Primary navigation
+
+- **Role home** — After login, each user type lands on **`/{role}`** (`/generator`, `/collector`, `/recycler`). This is the **hub** for that persona.
+- **Bottom navigation** — Not required today; if added later, keep **3–5 top-level destinations** and align tab roots with `GoRoute` branches so deep links and back stack stay predictable.
+
+### Secondary navigation
+
+- **Pushed screens** — Job detail, request pickup, tracking, wallet, notifications: use **`context.push`** so the system back gesture returns to the role dashboard or list.
+- **Modals / sheets** — Short decisions (confirm, filter) — prefer **`showModalBottomSheet`** or dialog; dismiss returns to the same underlying route.
+
+### Deep flows (mental model)
+
+| Flow | Typical path | Notes |
+|------|--------------|--------|
+| **Generator: request → track → complete** | Home → Request pickup → (submit) → Track / history | User should always find the request again from home or history — avoid orphan screens. |
+| **Collector: browse → accept → execute** | Dashboard → Open jobs / list → Job detail → Accept → Active job | Linear progression; **Back** from detail returns to list. |
+| **Recycler: deliveries → detail** | Dashboard → Delivery / transaction detail | Read-heavy; keep statuses visible on list rows when possible. |
+
+Align new features with these arcs so onboarding and support documentation stay simple.
+
+---
+
+## 9. Reusable widgets
 
 Defined in `lib/features/shared/app_widgets.dart`.
 
@@ -135,7 +208,7 @@ Defined in `lib/features/shared/app_widgets.dart`.
 - **API:** `title`, `subtitle`, optional `icon` (default `Icons.inbox_rounded`).
 - **Layout:** Centered column, icon size **48**, primary color for icon.
 
-### 6.1 Component states
+### 9.1 Component states
 
 Document **expected states** when implementing or extending components so behavior stays consistent.
 
@@ -158,7 +231,75 @@ Document **expected states** when implementing or extending components so behavi
 
 ---
 
-## 7. Screen patterns
+## 10. Component library
+
+Standard **Material 3** mappings so developers do not invent one-off controls. Extend this table when adding a genuinely new pattern (and then document it here).
+
+### Buttons
+
+| Variant | Widget / pattern | When to use |
+|---------|------------------|-------------|
+| **Primary** | `FilledButton` / `FilledButton.icon` | Main action on a screen (one primary per view when possible). |
+| **Secondary** | `FilledButton.tonal` | Alternate positive actions, less emphasis than primary. |
+| **Tertiary / inline** | `TextButton` | “Cancel”, “Learn more”, low-emphasis actions in dialogs or footers. |
+| **Danger** | `FilledButton` (or `TextButton`) with **`Theme.of(context).colorScheme.error`** foreground/background per M3 destructive pattern | Destructive confirm only — pair with dialog copy. |
+| **Icon-only (app bar)** | `IconButton` with **outlined** icon set where applicable | Toolbar actions — see [§14](#14-icons-and-visual-language). |
+
+### Surfaces
+
+| Component | Widget / pattern |
+|-----------|------------------|
+| **Cards** | `Card` + theme `cardTheme` (`AppRadius.card`) |
+| **Section group** | `AppSectionCard` for titled groups on dashboards |
+| **Lists** | `ListView` / `ListView.separated`; rows as `ListTile` or custom row with same vertical rhythm |
+
+### Inputs
+
+| Component | Widget / pattern |
+|-----------|------------------|
+| **Text** | `TextField` / `TextFormField` with `InputDecoration` (theme) |
+| **Dropdown** | `DropdownButtonFormField` |
+| **Date / time** | `showDatePicker` / `showTimePicker` (theme-aware) |
+
+### Chips & tags
+
+| Component | Widget / pattern |
+|-----------|------------------|
+| **Filter / category** | `FilterChip`, `ChoiceChip`, or `Chip` in a **`Wrap`** for responsive wrapping |
+
+### Overlays
+
+| Component | Widget / pattern |
+|-----------|------------------|
+| **Modal** | `AlertDialog`, `showDialog` |
+| **Bottom sheet** | `showModalBottomSheet` with themed shape (`AppRadius.sheet` for corners if custom) |
+| **Persistent banner** | `Material` / `Banner` under app bar — e.g. offline ([§19](#19-network-states-and-offline-ux)) |
+
+### Feedback
+
+| Component | Widget / pattern |
+|-----------|------------------|
+| **Transient toast** | `ScaffoldMessenger.of(context).showSnackBar` |
+| **Inline field error** | `InputDecoration.errorText` / `error` from `Form` validation |
+
+---
+
+## 11. Error and empty states
+
+`CenterState` is the default building block; pair it with the **right copy and actions** per case.
+
+| Case | UI | Notes |
+|------|-----|--------|
+| **No data** | `CenterState` with friendly title + short subtitle + neutral icon (`Icons.inbox_rounded` or domain icon) | Avoid “No data” alone — explain *what* is empty and what to do next. |
+| **Network / server error** | `CenterState` or inline error + **Retry** (`TextButton` / `FilledButton.tonal`) | Do not show raw exception strings in production; log details, show user-safe text. |
+| **Permission / auth error** | Clear explanation + single path (e.g. “Sign in again” → `context.go('/login')`) | No dead ends. |
+| **Critical failure** | Blocking UI (dialog or full-screen message) + optional support contact | Use rarely — e.g. security or data corruption. |
+
+**Do not** leave screens **blank** on error; **do not** expose stack traces to end users.
+
+---
+
+## 12. Screen patterns
 
 ### Layout
 
@@ -168,8 +309,8 @@ Document **expected states** when implementing or extending components so behavi
 
 ### Dashboards (generator, collector, recycler)
 
-- **App bar actions:** **Outlined** `IconButton`s for secondary entry (notifications, wallet) — see [§9](#9-icons-and-visual-language).
-- **Primary CTA:** See [§10](#10-role-based-ui-primary-ctas-and-language).
+- **App bar actions:** **Outlined** `IconButton`s for secondary entry (notifications, wallet) — see [§14](#14-icons-and-visual-language).
+- **Primary CTA:** See [§15](#15-role-based-ui-primary-ctas-and-language).
 - **Sections:** `AppSectionCard` + `ListTile` with `contentPadding: EdgeInsets.zero` for dense rows.
 
 ### Forms
@@ -187,12 +328,14 @@ requests.when(
 )
 ```
 
+Prefer mapped, user-safe copy in `error` instead of `'$e'` in production — see [§11](#11-error-and-empty-states).
+
 **Pull-to-refresh:** `NotificationsScreen` uses `RefreshIndicator` around `ListView.separated` — reuse for feeds that refetch.
 
-### 7.1 Loading UX (tiers)
+### 12.1 Loading UX (tiers)
 
 | Tier | When | Pattern |
-|------|------|-----------|
+|------|------|---------|
 | **Inline / center** | First load of a screen with little structure | `Center(child: CircularProgressIndicator())` — current default. |
 | **Button** | Submit / confirm | Small indicator inside button, button disabled — already used on auth. |
 | **Skeleton (future)** | Lists with known row shape (jobs, requests, transactions) | Prefer `shimmer`-style placeholders or `Card` grey boxes **before** adopting a new package; align row height with real `ListTile` / `Card` content. |
@@ -207,7 +350,7 @@ requests.when(
 
 ---
 
-## 8. Responsiveness and orientation
+## 13. Responsiveness and orientation
 
 | Concern | Guidance |
 |---------|----------|
@@ -220,23 +363,23 @@ Many users run **mixed device tiers**; never assume flagship screen size only.
 
 ---
 
-## 9. Icons and visual language
+## 14. Icons and visual language
 
 | Rule | Detail |
 |------|--------|
 | **App bar / navigation** | Prefer **outlined** variants (`Icons.notifications_outlined`, `Icons.receipt_long_outlined`) for secondary actions — matches current dashboards. |
 | **Primary CTAs** | **Filled** buttons with optional **filled** leading icon (`FilledButton.icon`) for the main action on a screen. |
-| **Icon + text** | Keep **gap** `AppSpacing.sm`–`md`; icon size **18–24** inline with button label. |
-| **Status / feedback** | Do not rely on emoji in production UI; use **Material icons** + short copy: success `Icons.check_circle_outline`, warning `Icons.warning_amber_rounded`, error `Icons.error_outline`. Pair with `ColorScheme.error` / `primary` / `tertiary` as appropriate — never color alone ([§11](#11-strings-localization-and-accessibility)). |
+| **Icon + text** | Keep **gap** `AppSpacing.sm`–`md`; icon size **18–24** inline with button label — default **20 or 24** for list and toolbar icons ([§5](#5-visual-consistency-rules)). |
+| **Status / feedback** | Do not rely on emoji in production UI; use **Material icons** + short copy: success `Icons.check_circle_outline`, warning `Icons.warning_amber_rounded`, error `Icons.error_outline`. Pair with `ColorScheme.error` / `primary` / `tertiary` as appropriate — never color alone ([§18](#18-strings-localization-and-accessibility)). |
 
 ---
 
-## 10. Role-based UI: primary CTAs and language
+## 15. Role-based UI: primary CTAs and language
 
 Use **one obvious primary action** per role home screen to reduce confusion. Product copy can evolve; treat these as **defaults**.
 
 | Role | Primary CTA (home) | Secondary emphasis |
-|------|--------------------|--------------------|
+|------|--------------------|-------------------|
 | **Generator** | **Request Pickup** — creates demand | Recent requests, impact, categories |
 | **Collector** | **Open** active job or **Accept** from available list — earning focus | Earnings today, wallet, map |
 | **Recycler** | **Details** on incoming deliveries / **Browse** materials (when marketplace exists) | Transactions history |
@@ -245,7 +388,7 @@ Implementation today maps to `GeneratorHomeScreen` (“Request Pickup”), colle
 
 ---
 
-## 11. Role-specific UI notes (files)
+## 16. Role-specific UI notes (files)
 
 ### Generator (`features/generator/`)
 
@@ -272,7 +415,7 @@ Implementation today maps to `GeneratorHomeScreen` (“Request Pickup”), colle
 
 ---
 
-## 12. State management and UI
+## 17. State management and UI
 
 Providers live in `lib/providers/app_providers.dart`. UI typically:
 
@@ -284,29 +427,39 @@ Do not embed business rules in widgets when they belong in notifiers/services; w
 
 ---
 
-## 13. Strings, localization, and accessibility
+## 18. Strings, localization, and accessibility
 
 - **Today:** Strings are mostly **inline English** in widgets.
 - **Target (see [DOCUMENTATION.md §42](../DOCUMENTATION.md)):** English and Kiswahili — plan to move user-visible strings to ARB / `AppLocalizations` when localization phase starts.
 - **Accessibility:** Use `Semantics` where custom gestures or non-obvious icons need labels; ensure touch targets meet **`AppTouchTarget.minSize`**; don’t rely on color alone for status — pair with text or icons.
 
----
+### Localization UI rules (Kenya / East Africa)
 
-## 14. Offline and degraded connectivity
-
-Aligned with **offline-first** direction in [DOCUMENTATION.md](../DOCUMENTATION.md) (e.g. offline support section). Until wired to real sync:
-
-| Pattern | Behavior |
-|---------|----------|
-| **Banner** | When `Connectivity` / platform APIs report offline, show a **persistent slim banner** under the app bar: “You’re offline — actions will sync when connected.” |
-| **Actions** | Disable mutations that require network (create request, accept job) or **queue** with clear copy — avoid silent failure. |
-| **Sync indicator** | Optional trailing icon or subtitle “Last synced …” on data-heavy screens. |
-
-Implement via a small `ConnectivityNotifier` (future) + `Banner` / `Material` strip; do not block the whole app unless security requires it.
+| Topic | Rule |
+|-------|------|
+| **Long copy (Kiswahili)** | Strings often run longer than English — avoid **fixed-width buttons** and fixed one-line layouts; use **`Flexible`**, **`Expanded`**, **`Wrap`**, and **`FittedBox`** only where appropriate (not for body text). |
+| **Layout** | Prefer **`Row`/`Column` with flexible children** over hard-coded widths; test with longest reasonable translation. |
+| **Overflow** | Run the app with **large text** and **long locale strings**; fix `RenderFlex` overflows before shipping. |
+| **Dates / numbers** | When localization lands, use `intl` / `AppLocalizations` for locale-aware formats — don’t concatenate raw strings. |
 
 ---
 
-## 15. Motion and animation
+## 19. Network states and offline UX
+
+Critical for **real-world connectivity** (including intermittent mobile data). Expands the offline-first direction in [DOCUMENTATION.md](../DOCUMENTATION.md).
+
+| State | UX |
+|-------|-----|
+| **Offline** | **Persistent slim banner** under the app bar (“You’re offline — …”); **disable or queue** mutations that require network with clear copy — no silent failure. |
+| **Slow / ambiguous** | Show **loading indicators** on the action or list; avoid duplicate spinners on the same surface; optional subtle “Still loading…” for long waits. |
+| **Failed request** | User-safe message + **Retry** CTA ([§11](#11-error-and-empty-states)); log technical detail for support. |
+| **Syncing / background sync** | Optional **“Syncing…”** subtitle, trailing icon, or linear progress — user should know data may not be latest yet. |
+
+**Implementation notes:** Use a `ConnectivityNotifier` (or equivalent) + `Banner` / `Material` strip; **do not** block the whole app unless security requires it. Align with [§12.1](#121-loading-ux-tiers) for loading tiers.
+
+---
+
+## 20. Motion and animation
 
 | Use | Guideline |
 |-----|------------|
@@ -317,18 +470,18 @@ Implement via a small `ConnectivityNotifier` (future) + `Banner` / `Material` st
 
 ---
 
-## 16. Adding a new screen (checklist)
+## 21. Adding a new screen (checklist)
 
 1. **Widget:** Create screen under the correct `features/<role>/` or `shared/` file.
 2. **Route:** Add `GoRoute` in `app_router.dart` (nested under the role branch if it is role-specific).
-3. **Navigation:** Follow [§5.1](#51-navigation-ux-rules); use route path constants if paths repeat.
+3. **Navigation:** Follow [§7.1](#71-navigation-ux-rules); use route path constants if paths repeat.
 4. **State:** If the screen needs async data, extend or add a provider/notifier rather than storing API results only in `StatefulWidget` local state (unless truly ephemeral).
-5. **Empty / error:** Use `CenterState` and spacing from `AppSpacing`.
+5. **Empty / error:** Use `CenterState` and spacing from `AppSpacing` — see [§11](#11-error-and-empty-states).
 6. **Theme:** Use `Theme.of(context)` and tokens; avoid new arbitrary colors without updating `AppTheme`.
 
 ---
 
-## 17. Testing UI
+## 22. Testing UI
 
 | Layer | What to add |
 |-------|-------------|
@@ -340,7 +493,49 @@ After visual changes, smoke-test **light and dark** (`themeMode: system` or devi
 
 ---
 
-## 18. Related documentation
+## 23. Performance UX (Flutter)
+
+Technical performance choices that **show up as smooth UI**:
+
+| Practice | Why |
+|----------|-----|
+| **Prefer `const` constructors** | Reduces rebuild work for static subtrees. |
+| **Avoid unnecessary `ref.watch` scope** | Watch only providers the widget needs; split widgets so large trees don’t rebuild on every tick. |
+| **List performance** | Use **`ListView.builder`** / **`.separated`** for long lists; avoid unbounded work in `itemBuilder`. |
+| **Images** | Use appropriate resolution and caching; avoid huge decoded images on low-end GPUs. |
+| **Animations** | Keep durations short; avoid stacking multiple heavy animations; test on a low-end device or emulator with **profile mode**. |
+
+If the UI **janks**, profile with Flutter DevTools before adding complexity.
+
+---
+
+## 24. Security UX
+
+Product trust and safety — align with backend auth rules when they land.
+
+| Topic | Guidance |
+|-------|----------|
+| **Sensitive data** | Mask or truncate **phone numbers**, **wallet balances**, and **IDs** in screenshots-friendly ways where full precision is not needed (e.g. show last 4 digits). |
+| **Destructive actions** | Always **confirm** (dialog or sheet) with clear consequences; use **error color** and explicit verbs (“Delete”, “Remove”). |
+| **Session timeout** | When implemented, prefer **clear message** (“Session expired — sign in again”) over a raw error. |
+| **Trust** | Reserve **badges or copy** (“Verified”, “Completed pickup”) for data backed by server truth — don’t imply verification without a source. |
+
+---
+
+## 25. Do and don’t
+
+| Do | Don’t |
+|----|--------|
+| Use **`AppSpacing` / `AppRadius`** for new layout | Hardcode arbitrary **colors** outside `Theme` / semantic exceptions |
+| Use **`Theme.of(context)`** for colors and text styles | Invent **new button styles** — use [§10](#10-component-library) mappings |
+| Reuse **`AppSectionCard`**, **`CenterState`**, Material components | Nest **multiple independent scroll views** without a clear reason (causes gesture conflicts) |
+| Follow [§11](#11-error-and-empty-states) for empty and errors | Show **blank screens** or **raw exceptions** to users |
+| Respect [§18](#18-strings-localization-and-accessibility) and flexible layouts for localization | Use **fixed-width** buttons for translated strings |
+| Honor [§19](#19-network-states-and-offline-ux) when connectivity matters | Assume **always-online** behavior for mutations |
+
+---
+
+## 26. Related documentation
 
 | Document | Content |
 |----------|---------|
