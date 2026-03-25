@@ -29,6 +29,10 @@ class WalletLedgerEntry extends Model
         'order_id',
         'idempotency_key',
         'provider_reference',
+        'originator_conversation_id',
+        'payout_status',
+        'payout_completed_at',
+        'payout_receipt',
         'created_at',
     ];
 
@@ -39,6 +43,7 @@ class WalletLedgerEntry extends Model
             'quantity_kg' => 'decimal:3',
             'balance_after' => 'decimal:2',
             'created_at' => 'datetime',
+            'payout_completed_at' => 'datetime',
         ];
     }
 
@@ -82,6 +87,9 @@ class WalletLedgerEntry extends Model
             'type' => $type,
             'description' => $this->description,
             'balanceAfter' => $this->balance_after !== null ? (float) $this->balance_after : null,
+            'payoutStatus' => $this->payout_status,
+            'conversationId' => $this->provider_reference,
+            'payoutReceipt' => $this->payout_receipt,
         ];
     }
 }

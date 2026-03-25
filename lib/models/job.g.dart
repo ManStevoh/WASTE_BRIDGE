@@ -14,6 +14,8 @@ Job _$JobFromJson(Map<String, dynamic> json) => Job(
   quantityKg: (json['quantityKg'] as num).toDouble(),
   earning: (json['earning'] as num).toDouble(),
   status: $enumDecode(_$JobStatusEnumMap, json['status']),
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$JobToJson(Job instance) => <String, dynamic>{
@@ -24,6 +26,8 @@ Map<String, dynamic> _$JobToJson(Job instance) => <String, dynamic>{
   'quantityKg': instance.quantityKg,
   'earning': instance.earning,
   'status': _$JobStatusEnumMap[instance.status]!,
+  'latitude': instance.latitude,
+  'longitude': instance.longitude,
 };
 
 const _$JobStatusEnumMap = {

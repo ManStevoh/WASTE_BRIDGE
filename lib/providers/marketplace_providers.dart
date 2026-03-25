@@ -7,10 +7,21 @@ final transactionsProvider = FutureProvider((ref) {
   return ref.read(transactionServiceProvider).getTransactions();
 });
 
+/// Sort: `newest`, `price_desc`, `price_asc`, `nearest` (with GPS).
+final marketplaceSortProvider = StateProvider<String>((ref) => 'newest');
+
+/// Optional: `fixed_price`, `bulk_contract`, `auction`, or null for all.
+final marketplaceListingModeProvider = StateProvider<String?>((ref) => null);
+
 /// Recycler marketplace browse (Phase 3). Refetch after auth changes.
 final marketplaceFeedProvider =
     FutureProvider.autoDispose<MarketplaceFeedPage>((ref) {
-      return ref.read(marketplaceServiceProvider).getFeed();
+      final sort = ref.watch(marketplaceSortProvider);
+      final mode = ref.watch(marketplaceListingModeProvider);
+      return ref.read(marketplaceServiceProvider).getFeed(
+            sort: sort,
+            listingMode: mode,
+          );
     });
 
 /// Orders where the current user is the buyer (recycler purchases).

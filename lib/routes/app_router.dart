@@ -111,12 +111,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'transactions',
             builder: (context, state) => const TransactionsScreen(),
           ),
+          GoRoute(
+            path: 'wallet',
+            builder: (context, state) => const WalletLedgerScreen(),
+          ),
         ],
       ),
 
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/kyc',
+        builder: (context, state) => const KycScreen(),
+      ),
+      GoRoute(
+        path: '/users/:userPublicId/ratings',
+        builder: (context, state) => UserRatingsScreen(
+          userPublicId: state.pathParameters['userPublicId']!,
+        ),
       ),
     ],
     redirect: (context, state) {

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PickupJob;
 use App\Services\AuditLogger;
 use App\Services\NotificationWriter;
+use App\Services\RouteOptimizationService;
 use App\Support\OrderLifecycle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,11 @@ class JobController extends Controller
         $paginator = PickupJob::query()
             ->with(['pickupRequest', 'order'])
             ->where(function ($q) use ($user) {
+                if (! $user->collector_available) {
+                    $q->where('collector_user_id', $user->id);
+
+                    return;
+                }
                 $q->where('status', 'open')
                     ->orWhere('collector_user_id', $user->id);
             })
@@ -39,6 +45,40 @@ class JobController extends Controller
                 'total' => $paginator->total(),
             ]
         );
+    }
+
+    /**
+     * Nearest-neighbor ordering for the collector's active multi-stop jobs (Phase 5.3).
+     * Query: optional `latitude` / `longitude` (collector position). Jobs without request GPS are listed last.
+     */
+    public function routePlan(Request $request, RouteOptimizationService $routeOptimization): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+        ]);
+
+        $lat = isset($validated['latitude']) ? (float) $validated['latitude'] : null;
+        $lng = isset($validated['longitude']) ? (float) $validated['longitude'] : null;
+
+        if (($lat === null) !== ($lng === null)) {
+            return response()->json([
+                'message' => 'Provide both latitude and longitude, or neither.',
+            ], 422);
+        }
+
+        $jobs = PickupJob::query()
+            ->with(['pickupRequest', 'order'])
+            ->where('collector_user_id', $user->id)
+            ->whereIn('status', ['accepted', 'arrived', 'picked'])
+            ->orderBy('id')
+            ->get();
+
+        $plan = $routeOptimization->planForCollector($jobs, $lat, $lng);
+
+        return $this->success($plan);
     }
 
     public function accept(Request $request, PickupJob $pickupJob): JsonResponse

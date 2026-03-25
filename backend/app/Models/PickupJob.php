@@ -64,15 +64,19 @@ class PickupJob extends Model
      */
     public function toJobArray(): array
     {
+        $pr = $this->pickupRequest;
+
         return [
             'id' => $this->public_id,
-            'requestId' => $this->pickupRequest->public_id,
+            'requestId' => $pr->public_id,
             'pickupLocation' => $this->pickup_location,
             'wasteType' => $this->waste_type,
             'quantityKg' => (float) $this->quantity_kg,
             'earning' => (float) $this->earning,
             'status' => $this->status,
             'orderId' => $this->order?->public_id,
+            'latitude' => $pr->latitude !== null ? (float) $pr->latitude : null,
+            'longitude' => $pr->longitude !== null ? (float) $pr->longitude : null,
         ];
     }
 }

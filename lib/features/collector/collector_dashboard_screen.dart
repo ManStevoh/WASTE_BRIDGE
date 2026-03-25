@@ -13,10 +13,21 @@ class CollectorDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final jobs = ref.watch(jobNotifierProvider);
+    final wallet = ref.watch(walletBalanceProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Collector Dashboard'),
         actions: [
+          IconButton(
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Profile',
+          ),
+          IconButton(
+            onPressed: () => context.push('/kyc'),
+            icon: const Icon(Icons.verified_user_outlined),
+            tooltip: 'Identity verification',
+          ),
           IconButton(
             onPressed: () => context.push('/collector/wallet'),
             icon: const Icon(Icons.account_balance_outlined),
@@ -43,6 +54,31 @@ class CollectorDashboardScreen extends ConsumerWidget {
           return ListView(
             padding: EdgeInsets.all(AppSpacing.md),
             children: [
+              wallet.when(
+                data: (w) => AppSectionCard(
+                  title: 'Wallet balance',
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${w.currency} ${w.balance.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.push('/collector/wallet'),
+                        child: const Text('Ledger'),
+                      ),
+                    ],
+                  ),
+                ),
+                loading: () => const AppSectionCard(
+                  title: 'Wallet balance',
+                  child: LinearProgressIndicator(),
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              SizedBox(height: AppSpacing.sm),
               AppSectionCard(
                 title: 'Earnings Today',
                 child: Text('NGN ${todayEarnings.toStringAsFixed(0)}'),

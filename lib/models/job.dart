@@ -13,6 +13,8 @@ class Job {
     required this.quantityKg,
     required this.earning,
     required this.status,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -22,6 +24,8 @@ class Job {
   final double quantityKg;
   final double earning;
   final JobStatus status;
+  final double? latitude;
+  final double? longitude;
 
   factory Job.fromJson(Map<String, dynamic> json) => _$JobFromJson(json);
 
@@ -36,6 +40,8 @@ class Job {
       quantityKg: quantityKg,
       earning: earning,
       status: status ?? this.status,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

@@ -102,4 +102,19 @@ final class GeoHaversine
     {
         return (string) $v;
     }
+
+    /**
+     * Haversine distance in km between two WGS84 points (degrees).
+     */
+    public static function distanceKmBetween(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $lat1r = deg2rad($lat1);
+        $lat2r = deg2rad($lat2);
+        $dlat = deg2rad($lat2 - $lat1);
+        $dlon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dlat / 2) ** 2 + cos($lat1r) * cos($lat2r) * sin($dlon / 2) ** 2;
+
+        return self::EARTH_KM * 2 * atan2(sqrt($a), sqrt(1 - $a));
+    }
 }

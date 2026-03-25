@@ -261,11 +261,21 @@ class AuthService {
 
   /// PATCH `/auth/me` — e.g. [collectorAvailable] for collectors.
 
-  Future<AppUser> updateProfile({String? name, bool? collectorAvailable}) async {
+  Future<AppUser> updateProfile({
+    String? name,
+    bool? collectorAvailable,
+    String? phone,
+    bool includePhone = false,
+  }) async {
 
     final body = <String, dynamic>{};
 
     if (name != null) body['name'] = name;
+
+    if (includePhone) {
+      final p = phone?.trim();
+      body['phone'] = (p == null || p.isEmpty) ? null : p;
+    }
 
     if (collectorAvailable != null) {
 

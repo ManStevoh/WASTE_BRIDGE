@@ -117,10 +117,12 @@ final class WalletLedgerService
         string $idempotencyKey,
         ?int $orderId = null,
         ?string $providerReference = null,
+        ?string $originatorConversationId = null,
+        ?string $initialPayoutStatus = null,
     ): WalletLedgerEntry {
         $debit = $amount;
 
-        return DB::transaction(function () use ($user, $debit, $category, $description, $idempotencyKey, $orderId, $providerReference): WalletLedgerEntry {
+        return DB::transaction(function () use ($user, $debit, $category, $description, $idempotencyKey, $orderId, $providerReference, $originatorConversationId, $initialPayoutStatus): WalletLedgerEntry {
             $existing = WalletLedgerEntry::query()->where('idempotency_key', $idempotencyKey)->first();
             if ($existing !== null) {
                 return $existing;
@@ -145,6 +147,8 @@ final class WalletLedgerService
                 'balance_after' => $wallet->balance,
                 'idempotency_key' => $idempotencyKey,
                 'provider_reference' => $providerReference,
+                'originator_conversation_id' => $originatorConversationId,
+                'payout_status' => $initialPayoutStatus,
                 'order_id' => $orderId,
                 'created_at' => now(),
             ]);

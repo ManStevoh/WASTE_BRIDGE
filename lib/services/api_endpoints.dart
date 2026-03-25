@@ -4,6 +4,8 @@ class ApiEndpoints {
   static const register = '/auth/register';
   static const authRefresh = '/auth/refresh';
   static const me = '/auth/me';
+  static const authDeviceToken = '/auth/device-token';
+  static const analyticsEvents = '/analytics/events';
   static const logout = '/auth/logout';
   static const logoutAll = '/auth/logout-all';
 
@@ -21,6 +23,7 @@ class ApiEndpoints {
   static const wallet = '/wallet';
   static const userWallet = '/user/wallet';
   static const walletTransactions = '/wallet/transactions';
+  static const walletLedgerExport = '/wallet/ledger/export';
   static const walletWithdraw = '/wallet/withdraw';
 
   static const marketplace = '/marketplace';
@@ -46,6 +49,7 @@ class ApiEndpoints {
 
   static const requests = '/requests';
   static const jobs = '/jobs';
+  static const jobsRoutePlan = '/jobs/route-plan';
 
   static String jobAccept(String jobPublicId) => '/jobs/$jobPublicId/accept';
 

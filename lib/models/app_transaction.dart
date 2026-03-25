@@ -14,6 +14,9 @@ class AppTransaction {
     this.type = TransactionType.credit,
     this.description,
     this.balanceAfter,
+    this.payoutStatus,
+    this.conversationId,
+    this.payoutReceipt,
   });
 
   final String id;
@@ -24,6 +27,15 @@ class AppTransaction {
   final TransactionType type;
   final String? description;
   final double? balanceAfter;
+
+  /// B2C withdrawal lifecycle (`submitted`, `completed`, `failed`, `timeout`), when applicable.
+  final String? payoutStatus;
+
+  /// Daraja ConversationID for M-Pesa B2C, when applicable.
+  final String? conversationId;
+
+  /// M-Pesa receipt from B2C result callback, when applicable.
+  final String? payoutReceipt;
 
   factory AppTransaction.fromJson(Map<String, dynamic> json) =>
       _$AppTransactionFromJson(json);

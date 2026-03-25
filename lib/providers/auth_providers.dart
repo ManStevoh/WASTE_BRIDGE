@@ -52,6 +52,29 @@ class AuthNotifier extends StateNotifier<AsyncValue<AppUser?>> {
     await _authService.logout();
     state = const AsyncValue.data(null);
   }
+
+  /// Reload `/auth/me` (e.g. after KYC submit).
+  Future<void> refreshFromServer() async {
+    final user = await _authService.getSavedUser();
+    state = AsyncValue.data(user);
+  }
+
+  /// PATCH `/auth/me` — name and optional collector availability.
+  Future<AppUser> updateProfile({
+    String? name,
+    bool? collectorAvailable,
+    String? phone,
+    bool includePhone = false,
+  }) async {
+    final user = await _authService.updateProfile(
+      name: name,
+      collectorAvailable: collectorAvailable,
+      phone: phone,
+      includePhone: includePhone,
+    );
+    state = AsyncValue.data(user);
+    return user;
+  }
 }
 
 final authNotifierProvider =

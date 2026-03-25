@@ -73,6 +73,7 @@ class User extends Authenticatable
             'id' => $this->public_id,
             'name' => $this->name,
             'email' => $this->email,
+            'phone' => $this->phone,
             'role' => $this->role,
             'kycStatus' => $this->kyc_status,
             'isVerified' => $this->is_verified,

@@ -157,4 +157,14 @@ return [
         'email_enabled' => (bool) env('RECEIPT_EMAIL_ENABLED', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 5 — logistics proof GPS (optional client coordinates on proof upload)
+    |--------------------------------------------------------------------------
+    */
+
+    'logistics' => [
+        'proof_gps_max_distance_km' => (float) env('PROOF_GPS_MAX_DISTANCE_KM', 2.0),
+    ],
+
 ];

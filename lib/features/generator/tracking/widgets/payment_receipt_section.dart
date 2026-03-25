@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:waste_bridge/core/theme/app_tokens.dart';
 import 'package:waste_bridge/features/shared/app_widgets.dart';
 import 'package:waste_bridge/features/shared/info_row.dart';
+import 'package:waste_bridge/features/shared/receipt_actions.dart';
 import 'package:waste_bridge/models/waste_request.dart';
 
 class PaymentReceiptSection extends StatelessWidget {
@@ -10,6 +12,8 @@ class PaymentReceiptSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasReceipt = request.receiptId != null && request.receiptId!.isNotEmpty;
+
     return AppSectionCard(
       title: 'Payment and Receipt',
       child: Column(
@@ -28,6 +32,10 @@ class PaymentReceiptSection extends StatelessWidget {
                 ? 'N/A'
                 : request.receiptIssuedAt!.toLocal().toString().split('.').first,
           ),
+          if (hasReceipt) ...[
+            SizedBox(height: AppSpacing.md),
+            ReceiptActions(receiptId: request.receiptId!),
+          ],
         ],
       ),
     );

@@ -50,6 +50,7 @@ WasteRequest _$WasteRequestFromJson(Map<String, dynamic> json) => WasteRequest(
       ? null
       : DateTime.parse(json['receiptIssuedAt'] as String),
   co2SavedKg: (json['co2SavedKg'] as num?)?.toDouble() ?? 0,
+  collectorPublicId: json['collectorPublicId'] as String?,
 );
 
 Map<String, dynamic> _$WasteRequestToJson(WasteRequest instance) =>
@@ -81,6 +82,7 @@ Map<String, dynamic> _$WasteRequestToJson(WasteRequest instance) =>
       'receiptId': instance.receiptId,
       'receiptIssuedAt': instance.receiptIssuedAt?.toIso8601String(),
       'co2SavedKg': instance.co2SavedKg,
+      'collectorPublicId': instance.collectorPublicId,
     };
 
 const _$RequestStatusEnumMap = {

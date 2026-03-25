@@ -33,6 +33,7 @@ class WasteRequest {
     this.receiptId,
     this.receiptIssuedAt,
     this.co2SavedKg = 0,
+    this.collectorPublicId,
   });
 
   final String id;
@@ -62,6 +63,8 @@ class WasteRequest {
   final String? receiptId;
   final DateTime? receiptIssuedAt;
   final double co2SavedKg;
+  /// Assigned collector [User.public_id], when set.
+  final String? collectorPublicId;
 
   factory WasteRequest.fromJson(Map<String, dynamic> json) =>
       _$WasteRequestFromJson(json);
@@ -91,6 +94,7 @@ class WasteRequest {
     String? receiptId,
     DateTime? receiptIssuedAt,
     double? co2SavedKg,
+    String? collectorPublicId,
   }) {
     return WasteRequest(
       id: id,
@@ -121,6 +125,7 @@ class WasteRequest {
       receiptId: receiptId ?? this.receiptId,
       receiptIssuedAt: receiptIssuedAt ?? this.receiptIssuedAt,
       co2SavedKg: co2SavedKg ?? this.co2SavedKg,
+      collectorPublicId: collectorPublicId ?? this.collectorPublicId,
     );
   }
 

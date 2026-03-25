@@ -18,6 +18,9 @@ AppTransaction _$AppTransactionFromJson(Map<String, dynamic> json) =>
           TransactionType.credit,
       description: json['description'] as String?,
       balanceAfter: (json['balanceAfter'] as num?)?.toDouble(),
+      payoutStatus: json['payoutStatus'] as String?,
+      conversationId: json['conversationId'] as String?,
+      payoutReceipt: json['payoutReceipt'] as String?,
     );
 
 Map<String, dynamic> _$AppTransactionToJson(AppTransaction instance) =>
@@ -30,6 +33,9 @@ Map<String, dynamic> _$AppTransactionToJson(AppTransaction instance) =>
       'type': _$TransactionTypeEnumMap[instance.type]!,
       'description': instance.description,
       'balanceAfter': instance.balanceAfter,
+      'payoutStatus': instance.payoutStatus,
+      'conversationId': instance.conversationId,
+      'payoutReceipt': instance.payoutReceipt,
     };
 
 const _$TransactionTypeEnumMap = {

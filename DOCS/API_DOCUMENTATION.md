@@ -396,16 +396,16 @@ Field names match **`json_serializable` generated code** in `lib/models/*.g.dart
 | `subscriptionPlan` | string | One of [`SubscriptionPlan`](#subscriptionplan); default `Free`. |
 | `referralCode` | string \| null | Optional code. |
 
-### 6.4 `AppTransaction` (not yet called over HTTP)
+### 6.4 `AppTransaction` (wallet ledger)
 
-Recycler transactions are loaded locally in `TransactionService` with no Dio calls.
-
-**Planned endpoints (illustrative; version under `/api/v1/`):**
+Loaded via **`TransactionService`** → **`GET /api/v1/wallet/transactions`**. See [PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md) for M-Pesa and reconciliation.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET` | `/api/v1/user/wallet/transactions` | Paginated ledger; items match this schema. |
-| `GET` | `/api/v1/user/wallet` | Balance + summary (see [§8.7](#87-get-apiv1userwallet)). |
+| `GET` | `/api/v1/wallet/transactions` | Paginated ledger (`data.items` + pagination meta). |
+| `GET` | `/api/v1/wallet` | Balance. |
+| `GET` | `/api/v1/wallet/ledger/export` | CSV export; optional query `from`, `to` (`YYYY-MM-DD`). |
+| `POST` | `/api/v1/wallet/withdraw` | Withdrawal (+ optional B2C). |
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -417,6 +417,9 @@ Recycler transactions are loaded locally in `TransactionService` with no Dio cal
 | `type` | string | `credit` \| `debit`. |
 | `description` | string \| null | Optional. |
 | `balanceAfter` | number \| null | Running balance. |
+| `payoutStatus` | string \| null | B2C lifecycle on debits (e.g. `submitted`, `completed`, `failed`, `timeout`). |
+| `conversationId` | string \| null | Daraja ConversationID when present. |
+| `payoutReceipt` | string \| null | M-Pesa receipt from B2C result when present. |
 
 ### 6.5 `AppNotification` (not yet called over HTTP)
 
@@ -642,7 +645,7 @@ Align line items with [`AppTransaction`](#64-apptransaction-not-yet-called-over-
 | **Pickup vs marketplace** | Doc differentiates marketplace listings vs pickup requests; Flutter `WasteRequest` maps to operational pickup flow—align `waste/create` vs `request-pickup` with product model. Target naming: e.g. **`POST /api/v1/pickups`** or **`POST /api/v1/requests`** (pick one resource name and stick to it). |
 | **`/api/update-status`** | **Design smell** — overloaded and hard to validate. Replace with resource routes in [§18](#18-target-v1-routes-replace-multiplexed-update-status). |
 | **Dispute URLs** | Flutter uses `/requests/...` without `/api`; standardize under **`/api/v1/requests/{id}/dispute`**. **Backward compatibility:** implement a **route alias** or **reverse-proxy rule** so legacy `POST /requests/{id}/dispute` still hits the same controller (or **301/308** to the canonical path). New clients should call only the **`/api/v1/...`** URL. |
-| **Wallet / payments** | Not wired in Dio yet; add endpoints when implementing `TransactionService` and payments ([§8.6](#86-post-apiv1paymentinitiate), [§8.7](#87-get-apiv1userwallet)). |
+| **Wallet / payments** | `TransactionService`, `PaymentService`, and `api_endpoints.dart` cover wallet, withdraw, payment initiate, receipts ([§6.4](#64-apptransaction-wallet-ledger), [§8.6](#86-post-apiv1paymentinitiate)). |
 | **Public API & webhooks** | Partner-facing keys, scopes, and outbound webhooks are modeled in [`DATABASE_STRUCTURE.md`](DATABASE_STRUCTURE.md); see [§13](#13-public-api--webhooks). |
 | **Response shape** | Move list and single-resource responses to the **`v1` envelope** in [§2.1](#21-success-response-envelope-v1-target). |
 

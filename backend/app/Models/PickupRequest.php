@@ -36,6 +36,8 @@ class PickupRequest extends Model
         'payment_status',
         'before_pickup_photo_url',
         'after_pickup_photo_url',
+        'proof_latitude',
+        'proof_longitude',
         'generator_rating',
         'collector_rating',
         'is_disputed',
@@ -67,6 +69,8 @@ class PickupRequest extends Model
             'is_disputed' => 'boolean',
             'receipt_issued_at' => 'datetime',
             'co2_saved_kg' => 'float',
+            'proof_latitude' => 'float',
+            'proof_longitude' => 'float',
         ];
     }
 
@@ -129,6 +133,8 @@ class PickupRequest extends Model
             'estimatedEtaMinutes' => $this->estimated_eta_minutes,
             'beforePickupPhotoUrl' => $this->before_pickup_photo_url,
             'afterPickupPhotoUrl' => $this->after_pickup_photo_url,
+            'proofLatitude' => $this->proof_latitude !== null ? (float) $this->proof_latitude : null,
+            'proofLongitude' => $this->proof_longitude !== null ? (float) $this->proof_longitude : null,
             'generatorRating' => $this->generator_rating,
             'collectorRating' => $this->collector_rating,
             'scheduledAt' => $this->scheduled_at?->toIso8601String(),
@@ -144,6 +150,7 @@ class PickupRequest extends Model
             'co2SavedKg' => (float) $this->co2_saved_kg,
             'listingId' => $this->listing?->public_id,
             'orderId' => $this->order?->public_id,
+            'collectorPublicId' => $this->assignedCollector?->public_id,
         ];
     }
 }

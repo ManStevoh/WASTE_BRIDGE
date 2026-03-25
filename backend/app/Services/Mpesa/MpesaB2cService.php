@@ -97,4 +97,70 @@ final class MpesaB2cService
             'raw' => $json,
         ];
     }
+
+    /**
+     * Parse Daraja B2C ResultURL / QueueTimeOutURL JSON body.
+     *
+     * @return array{
+     *   conversation_id: ?string,
+     *   originator_conversation_id: ?string,
+     *   result_code: int,
+     *   result_desc: string,
+     *   transaction_receipt: ?string,
+     *   transaction_amount: ?string
+     * }
+     */
+    public static function parseB2cResultPayload(array $payload): array
+    {
+        $result = $payload['Result'] ?? $payload['result'] ?? null;
+        if (! is_array($result)) {
+            return [
+                'conversation_id' => null,
+                'originator_conversation_id' => null,
+                'result_code' => -1,
+                'result_desc' => 'Invalid B2C payload (missing Result)',
+                'transaction_receipt' => null,
+                'transaction_amount' => null,
+            ];
+        }
+
+        $code = isset($result['ResultCode']) ? (int) $result['ResultCode'] : -1;
+        $desc = isset($result['ResultDesc']) ? (string) $result['ResultDesc'] : '';
+        $conv = isset($result['ConversationID']) ? trim((string) $result['ConversationID']) : '';
+        $orig = isset($result['OriginatorConversationID']) ? trim((string) $result['OriginatorConversationID']) : '';
+
+        $receipt = null;
+        $amount = null;
+        $params = $result['ResultParameters'] ?? null;
+        if (is_array($params)) {
+            $list = $params['ResultParameter'] ?? null;
+            if (is_array($list)) {
+                if (isset($list['Key'])) {
+                    $list = [$list];
+                }
+                foreach ($list as $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    $key = $item['Key'] ?? $item['key'] ?? null;
+                    $val = $item['Value'] ?? $item['value'] ?? null;
+                    if ($key === 'TransactionReceipt' && $val !== null) {
+                        $receipt = (string) $val;
+                    }
+                    if ($key === 'TransactionAmount' && $val !== null) {
+                        $amount = (string) $val;
+                    }
+                }
+            }
+        }
+
+        return [
+            'conversation_id' => $conv !== '' ? $conv : null,
+            'originator_conversation_id' => $orig !== '' ? $orig : null,
+            'result_code' => $code,
+            'result_desc' => $desc,
+            'transaction_receipt' => $receipt,
+            'transaction_amount' => $amount,
+        ];
+    }
 }

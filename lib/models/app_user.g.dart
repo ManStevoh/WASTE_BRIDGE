@@ -18,6 +18,7 @@ AppUser _$AppUserFromJson(Map<String, dynamic> json) => AppUser(
   subscriptionPlan: json['subscriptionPlan'] as String? ?? 'Free',
   referralCode: json['referralCode'] as String?,
   collectorAvailable: json['collectorAvailable'] as bool?,
+  phone: json['phone'] as String?,
 );
 
 Map<String, dynamic> _$AppUserToJson(AppUser instance) => <String, dynamic>{
@@ -30,6 +31,7 @@ Map<String, dynamic> _$AppUserToJson(AppUser instance) => <String, dynamic>{
   'subscriptionPlan': instance.subscriptionPlan,
   'referralCode': instance.referralCode,
   'collectorAvailable': instance.collectorAvailable,
+  'phone': instance.phone,
 };
 
 const _$UserRoleEnumMap = {

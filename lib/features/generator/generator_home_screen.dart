@@ -17,6 +17,16 @@ class GeneratorHomeScreen extends ConsumerWidget {
         title: const Text('Generator Home'),
         actions: [
           IconButton(
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Profile',
+          ),
+          IconButton(
+            onPressed: () => context.push('/kyc'),
+            icon: const Icon(Icons.verified_user_outlined),
+            tooltip: 'Identity verification',
+          ),
+          IconButton(
             onPressed: () => context.push('/generator/impact'),
             icon: const Icon(Icons.insights_outlined),
           ),
@@ -43,6 +53,12 @@ class GeneratorHomeScreen extends ConsumerWidget {
             onPressed: () => context.push('/generator/create-listing'),
             icon: const Icon(Icons.storefront_outlined),
             label: const Text('Post listing to marketplace'),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/kyc'),
+            icon: const Icon(Icons.verified_user_outlined),
+            label: const Text('Identity verification (KYC)'),
           ),
           SizedBox(height: AppSpacing.md),
           const AppSectionCard(

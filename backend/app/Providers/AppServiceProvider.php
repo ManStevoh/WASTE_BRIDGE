@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\WalletWithdrawalB2cFinalized;
+use App\Listeners\SendWalletWithdrawalB2cNotification;
 use App\Contracts\FileScanner;
 use App\Contracts\SmsSender;
 use App\Services\FileScanning\ClamAvFileScanner;
@@ -11,6 +13,7 @@ use App\Services\Sms\NullSmsSender;
 use App\Services\Sms\TwilioSmsSender;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -82,6 +85,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('mpesa-webhook', function (Request $request) {
             return Limit::perMinute(120)->by($request->ip());
         });
+
+        RateLimiter::for('mpesa-b2c-webhook', function (Request $request) {
+            return Limit::perMinute(120)->by($request->ip());
+        });
+
+        Event::listen(WalletWithdrawalB2cFinalized::class, SendWalletWithdrawalB2cNotification::class);
 
         RateLimiter::for('api', function (Request $request) {
             $key = (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());

@@ -141,6 +141,7 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'collectorAvailable' => ['sometimes', 'boolean'],
         ]);
 
@@ -151,6 +152,12 @@ class AuthController extends Controller
         $updates = [];
         if (isset($validated['name'])) {
             $updates['name'] = $validated['name'];
+        }
+        if (array_key_exists('phone', $validated)) {
+            $raw = $validated['phone'];
+            $updates['phone'] = ($raw !== null && $raw !== '')
+                ? PhoneE164::normalize($raw)
+                : null;
         }
         if (isset($validated['collectorAvailable'])) {
             $updates['collector_available'] = $validated['collectorAvailable'];

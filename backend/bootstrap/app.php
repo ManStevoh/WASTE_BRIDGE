@@ -21,7 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => EnsureUserRole::class,
+            'web.admin' => \App\Http\Middleware\EnsureWebAdmin::class,
         ]);
+
+        $middleware->redirectGuestsTo(fn () => route('admin.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

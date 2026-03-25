@@ -15,6 +15,7 @@ use App\Models\WasteListing;
 use App\Services\AuditLogger;
 use App\Services\EscrowService;
 use App\Services\NotificationWriter;
+use App\Support\GeoHaversine;
 use App\Support\OrderLifecycle;
 use App\Support\PickupPricing;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,7 @@ class PickupRequestController extends Controller
 
         $paginator = PickupRequest::query()
             ->where('generator_user_id', $user->id)
+            ->with('assignedCollector')
             ->latest()
             ->paginate(perPage: min((int) $request->query('per_page', 20), 100));
 
@@ -153,7 +155,36 @@ class PickupRequestController extends Controller
             'after_photo' => ['nullable', 'file', 'image', 'max:5120'],
             'beforePickupPhotoUrl' => ['nullable', 'string', 'max:1024'],
             'afterPickupPhotoUrl' => ['nullable', 'string', 'max:1024'],
+            'proof_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'proof_longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
+
+        if (isset($validated['proof_latitude']) xor isset($validated['proof_longitude'])) {
+            return response()->json([
+                'message' => 'Provide both proof_latitude and proof_longitude, or neither.',
+            ], 422);
+        }
+
+        if (isset($validated['proof_latitude'], $validated['proof_longitude'])) {
+            $pickupRequest->proof_latitude = (float) $validated['proof_latitude'];
+            $pickupRequest->proof_longitude = (float) $validated['proof_longitude'];
+
+            if ($pickupRequest->latitude !== null && $pickupRequest->longitude !== null) {
+                $maxKm = (float) config('waste_bridge.logistics.proof_gps_max_distance_km', 2.0);
+                $d = GeoHaversine::distanceKmBetween(
+                    (float) $pickupRequest->latitude,
+                    (float) $pickupRequest->longitude,
+                    $pickupRequest->proof_latitude,
+                    $pickupRequest->proof_longitude,
+                );
+                if ($d > $maxKm) {
+                    return response()->json([
+                        'message' => 'Proof location is too far from the pickup coordinates.',
+                        'code' => 'PROOF_GPS_TOO_FAR',
+                    ], 422);
+                }
+            }
+        }
 
         $scanner = app(FileScanner::class);
         $storedForScan = [];

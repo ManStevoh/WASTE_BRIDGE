@@ -23,8 +23,8 @@ This document maps **what exists in the repository today** to **[IMPLEMENTATION_
 | **1** | Backend foundation: schema + API skeleton | **Partial** — core done; `FORCE_HTTPS` + `TRUSTED_PROXIES` supported; see Phase 1 table |
 | **2** | Security and access control | **Done** — as before; **Partial** — partner-specific JWT if required; ClamAV optional in production |
 | **3** | Marketplace and matching | **Partial** — **3.1 done** (`MarketplaceFeedQuery`: waste type, price, quantity, distance, sort, listing modes); **3.2** partial (auction rows + expiry close, no bids API; bulk in feed only); **3.3–3.4** partial |
-| **4** | Payments, wallet, settlements | **Partial** — ledger, escrow capture/release (`EscrowService`), wallet withdraw (B2C when configured), M-Pesa STK + idempotent webhook, receipt JSON/PDF + optional email; not a full audited PSP certification |
-| **5** | Logistics, tracking, proof | **Partial** — jobs, accept, proof, ratings POST; **collector availability** (`PATCH /auth/me`); **GET** `users/{id}/ratings`; no route optimization |
+| **4** | Payments, wallet, settlements | **Done** — ledger + CSV exports, STK + idempotent callback, **B2C Result/Timeout** webhooks with reversal on failure, escrow capture/release, receipts JSON/PDF; see [PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md) (PSP certification / bank-grade audit still an external process) |
+| **5** | Logistics, tracking, proof | **Partial** — jobs, accept, proof + optional **GPS verification**, ratings POST; **collector availability** (`PATCH /auth/me`) + **open jobs hidden** when unavailable; **GET** `users/{id}/ratings`; **GET** `jobs/route-plan` (nearest-neighbor); real-time tracking still Phase **6** |
 | **6** | Real-time | **—** |
 | **7** | Notifications | **Partial** — in-app list API; receipt email when `RECEIPT_EMAIL_ENABLED`; OTP SMS when `SMS_DRIVER=twilio`; no FCM |
 | **8** | Analytics | **—** |
@@ -113,12 +113,14 @@ This document maps **what exists in the repository today** to **[IMPLEMENTATION_
 
 ## Phase 4 — Payments, wallet, settlements
 
+**Status: Done** in code for the plan’s MVP scope. Operator runbook: **[PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md)**.
+
 | Step | Plan | Implemented |
 |------|------|-------------|
-| 4.1 | Wallet ledger | `Wallet`, `WalletLedgerEntry`, `WalletLedgerService`, `WalletController` |
-| 4.2 | M-Pesa | **Partial** — `MpesaWebhookController` + `MpesaService` STK; idempotent by `CheckoutRequestID`; local test harness; production relies on Daraja + matching intent (no separate HMAC layer in repo) |
-| 4.3 | Escrow / commissions / withdrawals | **Partial** — `EscrowService`, `WalletController::withdraw`, B2C when `MPESA_B2C_*` set |
-| 4.4 | Events → notifications | **Partial** — `NotificationWriter` inline; not a full event bus |
+| 4.1 | Wallet ledger | **Done** — `Wallet`, `WalletLedgerEntry`, `WalletLedgerService`, `WalletController`; **`GET /wallet/ledger/export`** (user CSV); **`GET /admin/wallet/reconciliation/export`** (admin CSV) |
+| 4.2 | M-Pesa | **Done** — `MpesaWebhookController` + `MpesaService` STK; idempotent by `CheckoutRequestID`; `MPESA_CALLBACK_URL` override; **no** separate HMAC verification layer (rely on TLS + Daraja registration) |
+| 4.3 | Escrow / commissions / withdrawals | **Done** — `EscrowService`, `WalletController::withdraw`, `MpesaB2cService` when `MPESA_B2C_*` set; **B2C completion** via `WalletB2cPayoutCompletionService` + **`POST /webhooks/mpesa/b2c/result`** and **`/timeout`** (failure → wallet reversal) |
+| 4.4 | Events → notifications | **Done** — `WalletWithdrawalB2cFinalized` + listener for B2C outcomes; other flows use `NotificationWriter` where message copy is contextual |
 | 4.5 | Receipts | **Done** — `ReceiptController` JSON + PDF; email via `ReceiptEmailNotifier` when enabled; `orders` receipt fields mirror pickup on release |
 
 **Key files (Phase 4)**
@@ -126,10 +128,15 @@ This document maps **what exists in the repository today** to **[IMPLEMENTATION_
 | Area | Location |
 |------|----------|
 | M-Pesa STK | `backend/app/Services/Mpesa/MpesaService.php` |
-| M-Pesa webhook | `backend/app/Http/Controllers/Api/V1/MpesaWebhookController.php` |
-| B2C withdrawal | `backend/app/Services/Mpesa/MpesaB2cService.php`, `WalletController::withdraw` |
+| M-Pesa STK webhook | `backend/app/Http/Controllers/Api/V1/MpesaWebhookController.php` |
+| B2C request + parser | `backend/app/Services/Mpesa/MpesaB2cService.php` |
+| B2C completion | `backend/app/Services/WalletB2cPayoutCompletionService.php` |
+| B2C webhooks | `backend/app/Http/Controllers/Api/V1/MpesaB2cWebhookController.php` |
+| Withdrawals + user export | `backend/app/Http/Controllers/Api/V1/WalletController.php` |
+| Admin reconciliation | `backend/app/Http/Controllers/Api/V1/AdminWalletReconciliationController.php` |
 | Escrow | `backend/app/Services/EscrowService.php`, `OrderLifecycle` |
 | Receipts | `backend/app/Http/Controllers/Api/V1/ReceiptController.php`, `resources/views/receipts/pdf.blade.php` |
+| B2C events | `backend/app/Events/WalletWithdrawalB2cFinalized.php`, `backend/app/Listeners/SendWalletWithdrawalB2cNotification.php` |
 | Tests | `backend/tests/Feature/Phase4Test.php` |
 
 ---
@@ -215,7 +222,7 @@ This document maps **what exists in the repository today** to **[IMPLEMENTATION_
 Aligned with the plan’s **Phase 35** direction (API-backed services):
 
 - **API base URL** — `lib/core/constants/app_constants.dart` (`/api/v1`, overridable via `API_BASE_URL`).
-- **Endpoints** — `lib/services/api_endpoints.dart` matches v1 paths (includes Phase 2: `auth/refresh`, `auth/logout-all`, OTP, KYC, `users/.../ratings`).
+- **Endpoints** — `lib/services/api_endpoints.dart` matches v1 paths (includes Phase 2: `auth/refresh`, `auth/logout-all`, OTP, KYC, `users/.../ratings`; Phase 4: `wallet/ledger/export`, wallet withdraw, receipts).
 - **Services** — `AuthService` persists **refresh token**, **`updateProfile()`** (PATCH `/auth/me`), **`refreshAccessToken()`**, **`logoutAll()`**, retries **`/auth/me`** after refresh on **401**; `AppUser` includes optional **`collectorAvailable`**; other services wired via Riverpod (`lib/providers/app_providers.dart`).
 - **Not** a full “Phase 34–36” UI/trust/KYC suite; KYC/OTP UIs are not fully built—APIs are available for integration.
 
@@ -225,11 +232,11 @@ Aligned with the plan’s **Phase 35** direction (API-backed services):
 
 1. **Phase 1.6 / 14** — Infrastructure as code (Terraform/K8s), secrets manager, production APM; optional Docker image for the API.
 2. **Phase 2 (residual)** — Optional ClamAV in production; partner **JWT-only** APIs if required; session/token review.
-3. **Phase 4** — Full Daraja/PSP operational runbooks; B2C result URL handling beyond request acceptance; reconciliation exports.
+3. **Phase 4 (ops)** — External PSP **certification** / pen-test sign-off; optional automated **M-Pesa statement** ingest (manual CSV reconciliation is supported).
 4. **Phase 6–8, 10–12, 15+** — Real-time, analytics dashboards, gamification, automation, multi-tenant — still **not** implemented beyond placeholders in the plan.
 5. **Phase 7** — FCM/APNs; transactional SMS beyond OTP; rich email templates.
 6. **Phase 13** — Flutter integration tests in CI; optional OpenAPI contract checks.
 
 ---
 
-*Last updated: **2026-03-24** — Verified Phases **0–4** against the repo: `GeoHaversine` + `MarketplaceFeedQuery` fixes for SQLite tests; Phase 4 (`MpesaService` STK, `EscrowService`, `ReceiptController` JSON+PDF, optional `MpesaB2cService` withdrawals, `tests/Feature/Phase4Test.php`). Flutter `api_endpoints.dart` includes wallet withdraw, receipts, orders, marketplace purchase. See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).*
+*Last updated: **2026-03-25** — Phase 4 completed in repo: B2C **Result/Timeout** webhooks (`WalletB2cPayoutCompletionService`), ledger **payout** columns, user + admin **CSV exports**, `WalletWithdrawalB2cFinalized` event; see [PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md). Flutter: `api_endpoints.dart` wallet + receipts; optional ledger export path `walletLedgerExport`. See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).*

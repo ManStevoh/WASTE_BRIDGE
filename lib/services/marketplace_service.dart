@@ -9,6 +9,7 @@ class MarketplaceService {
 
   Future<MarketplaceFeedPage> getFeed({
     String? wasteType,
+    String? listingMode,
     double? minPrice,
     double? maxPrice,
     double? minQuantityKg,
@@ -21,6 +22,7 @@ class MarketplaceService {
   }) async {
     final query = <String, dynamic>{
       if (wasteType != null) 'wasteType': wasteType,
+      if (listingMode != null) 'listingMode': listingMode,
       if (minPrice != null) 'minPrice': minPrice,
       if (maxPrice != null) 'maxPrice': maxPrice,
       if (minQuantityKg != null) 'minQuantityKg': minQuantityKg,

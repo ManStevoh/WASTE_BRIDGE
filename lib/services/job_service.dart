@@ -31,4 +31,20 @@ class JobService {
     );
     return Job.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// Phase 5 — nearest-neighbor route for active jobs (`accepted` | `arrived` | `picked`).
+  /// Pass both [latitude] and [longitude] (collector position) or omit both.
+  Future<Map<String, dynamic>> getRoutePlan({
+    double? latitude,
+    double? longitude,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.jobsRoutePlan,
+      queryParameters: {
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+      },
+    );
+    return response.data ?? {};
+  }
 }

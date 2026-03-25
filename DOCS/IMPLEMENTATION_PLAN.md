@@ -180,6 +180,8 @@ flowchart TB
 
 ## Phase 4 — Payments, wallet, and settlements
 
+**Implementation reference (repo):** [PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md) — STK, B2C Result/Timeout, escrow, receipts, reconciliation CSV exports.
+
 | Step | What to implement | Doc ref |
 |------|-------------------|---------|
 | 4.1 | **Wallet** ledger: balance, immutable transaction log, reconciliation hooks. | §8, §11 |

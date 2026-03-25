@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:waste_bridge/core/theme/app_tokens.dart';
 import 'package:waste_bridge/core/ui/user_safe_error.dart';
 import 'package:waste_bridge/features/shared/app_widgets.dart';
+import 'package:waste_bridge/features/shared/user_ratings_section.dart';
 import 'package:waste_bridge/models/marketplace_listing.dart';
 import 'package:waste_bridge/providers/app_providers.dart';
 
@@ -272,6 +273,13 @@ class _RecyclerListingDetailScreenState
               ],
             ),
           ),
+          if (l.sellerUserId != null) ...[
+            SizedBox(height: AppSpacing.sm),
+            UserRatingsSection(
+              userPublicId: l.sellerUserId!,
+              title: 'Seller ratings',
+            ),
+          ],
           SizedBox(height: AppSpacing.md),
           action,
         ],

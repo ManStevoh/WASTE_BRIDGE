@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AdminKycSubmissionController;
+use App\Http\Controllers\Api\V1\AdminWalletReconciliationController;
+use App\Http\Controllers\Api\V1\AnalyticsEventController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\JobController;
 use App\Http\Controllers\Api\V1\KycSubmissionController;
 use App\Http\Controllers\Api\V1\MarketplaceBidController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\MarketplacePurchaseController;
+use App\Http\Controllers\Api\V1\MpesaB2cWebhookController;
 use App\Http\Controllers\Api\V1\MpesaWebhookController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OrderController;
@@ -34,12 +38,23 @@ Route::prefix('v1')->group(function () {
     Route::post('webhooks/mpesa/callback', [MpesaWebhookController::class, 'callback'])
         ->middleware('throttle:mpesa-webhook');
 
+    Route::post('webhooks/mpesa/b2c/result', [MpesaB2cWebhookController::class, 'result'])
+        ->middleware('throttle:mpesa-b2c-webhook');
+    Route::post('webhooks/mpesa/b2c/timeout', [MpesaB2cWebhookController::class, 'timeout'])
+        ->middleware('throttle:mpesa-b2c-webhook');
+
     Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::patch('auth/me', [AuthController::class, 'updateMe']);
+        Route::post('auth/device-token', [DeviceTokenController::class, 'store'])
+            ->middleware('throttle:api-upload');
+        Route::delete('auth/device-token', [DeviceTokenController::class, 'destroy']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::post('auth/logout-all', [AuthController::class, 'logoutAll'])
             ->middleware('throttle:api-sensitive');
+
+        Route::post('analytics/events', [AnalyticsEventController::class, 'store'])
+            ->middleware('throttle:api');
 
         Route::get('notifications', [NotificationController::class, 'index']);
 
@@ -62,6 +77,8 @@ Route::prefix('v1')->group(function () {
         Route::get('wallet', [WalletController::class, 'show']);
         Route::get('user/wallet', [WalletController::class, 'show']);
         Route::get('wallet/transactions', [WalletController::class, 'transactions']);
+        Route::get('wallet/ledger/export', [WalletController::class, 'exportLedger'])
+            ->middleware('throttle:api-sensitive');
         Route::post('wallet/withdraw', [WalletController::class, 'withdraw'])
             ->middleware('throttle:api-sensitive');
 
@@ -79,6 +96,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:admin')->group(function () {
             Route::get('admin/kyc/submissions', [AdminKycSubmissionController::class, 'index']);
             Route::patch('admin/kyc/submissions/{kyc_submission}', [AdminKycSubmissionController::class, 'review'])
+                ->middleware('throttle:api-sensitive');
+            Route::get('admin/wallet/reconciliation/export', [AdminWalletReconciliationController::class, 'export'])
                 ->middleware('throttle:api-sensitive');
         });
 
@@ -99,6 +118,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:collector')->group(function () {
             Route::post('pickup/accept', [JobController::class, 'acceptByPublicId']);
             Route::get('jobs', [JobController::class, 'index']);
+            Route::get('jobs/route-plan', [JobController::class, 'routePlan']);
             Route::post('jobs/{pickup_job}/accept', [JobController::class, 'accept']);
             Route::patch('jobs/{pickup_job}', [JobController::class, 'update']);
         });

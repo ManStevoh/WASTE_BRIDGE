@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:waste_bridge/core/network/api_client.dart';
+import 'package:waste_bridge/services/analytics_service.dart';
 import 'package:waste_bridge/services/auth_service.dart';
 import 'package:waste_bridge/services/job_service.dart';
+import 'package:waste_bridge/services/kyc_service.dart';
 import 'package:waste_bridge/services/marketplace_service.dart';
 import 'package:waste_bridge/services/notification_service.dart';
 import 'package:waste_bridge/services/order_service.dart';
 import 'package:waste_bridge/services/payment_service.dart';
+import 'package:waste_bridge/services/ratings_service.dart';
+import 'package:waste_bridge/services/receipt_service.dart';
 import 'package:waste_bridge/services/transaction_service.dart';
 import 'package:waste_bridge/services/waste_listing_service.dart';
 import 'package:waste_bridge/services/waste_request_service.dart';
@@ -37,4 +41,16 @@ final orderServiceProvider = Provider(
 );
 final wasteListingServiceProvider = Provider(
   (ref) => WasteListingService(ref.read(apiClientProvider).dio),
+);
+final receiptServiceProvider = Provider(
+  (ref) => ReceiptService(ref.read(apiClientProvider).dio),
+);
+final kycServiceProvider = Provider(
+  (ref) => KycService(ref.read(apiClientProvider).dio),
+);
+final ratingsServiceProvider = Provider(
+  (ref) => RatingsService(ref.read(apiClientProvider).dio),
+);
+final analyticsServiceProvider = Provider(
+  (ref) => AnalyticsService(ref.read(apiClientProvider).dio),
 );

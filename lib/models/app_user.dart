@@ -15,11 +15,14 @@ class AppUser {
     this.subscriptionPlan = 'Free',
     this.referralCode,
     this.collectorAvailable,
+    this.phone,
   });
 
   final String id;
   final String name;
   final String email;
+  /// M-Pesa / contact phone when set on the server.
+  final String? phone;
   final UserRole role;
   final KycStatus kycStatus;
   final bool isVerified;
