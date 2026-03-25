@@ -1,3 +1,10 @@
+---
+title: Implementation Plan
+layout: default
+nav_order: 3
+permalink: /implementation/
+---
+
 # Waste Bridge — Full Implementation Plan
 
 This document turns [DOCUMENTATION.md](./DOCUMENTATION.md) into a **single ordered implementation path** from first engineering step to last. It follows **dependency order**: foundation → core transactional platform → real-time and comms → quality and compliance → scale and enterprise features → localization and product backlog → continuous governance.
