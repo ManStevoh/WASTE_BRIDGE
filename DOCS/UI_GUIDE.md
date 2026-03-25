@@ -1,6 +1,13 @@
+---
+title: UI guide
+layout: default
+nav_order: 12
+permalink: /ui-guide/
+---
+
 # Waste Bridge — UI Implementation Guide
 
-This guide describes **how the Flutter UI is structured today**, **design conventions to follow when adding screens**, and **how UI ties to navigation and state**. It complements [DOCUMENTATION.md](../DOCUMENTATION.md) (product vision, full screen backlog) and the [Appendix](../DOCUMENTATION.md#appendix-current-flutter-codebase-implementation-snapshot) (implementation snapshot).
+This guide describes **how the Flutter UI is structured today**, **design conventions to follow when adding screens**, and **how UI ties to navigation and state**. It complements [System Documentation]({{ '/documentation/' | relative_url }}) (product vision, full screen backlog; repo: `DOCUMENTATION.md`) and the [Appendix]({{ '/documentation/' | relative_url }}#appendix-current-flutter-codebase-implementation-snapshot) (implementation snapshot).
 
 **Audience:** Flutter developers extending the app, designers aligning with Material 3 usage, and reviewers checking consistency.
 
@@ -438,7 +445,7 @@ Do not embed business rules in widgets when they belong in notifiers/services; w
 ## 18. Strings, localization, and accessibility
 
 - **Today:** Strings are mostly **inline English** in widgets.
-- **Target (see [DOCUMENTATION.md §42](../DOCUMENTATION.md)):** English and Kiswahili — plan to move user-visible strings to ARB / `AppLocalizations` when localization phase starts.
+- **Target (see [System Documentation §42]({{ '/documentation/' | relative_url }}#42-localization-english--kiswahili)):** English and Kiswahili — plan to move user-visible strings to ARB / `AppLocalizations` when localization phase starts.
 - **Accessibility:** Use `Semantics` where custom gestures or non-obvious icons need labels; ensure touch targets meet **`AppTouchTarget.minSize`**; don’t rely on color alone for status — pair with text or icons.
 
 ### Localization UI rules (Kenya / East Africa)
@@ -454,7 +461,7 @@ Do not embed business rules in widgets when they belong in notifiers/services; w
 
 ## 19. Network states and offline UX
 
-Critical for **real-world connectivity** (including intermittent mobile data). Expands the offline-first direction in [DOCUMENTATION.md](../DOCUMENTATION.md).
+Critical for **real-world connectivity** (including intermittent mobile data). Expands the offline-first direction in [System Documentation]({{ '/documentation/' | relative_url }}).
 
 | State | UX |
 |-------|-----|
@@ -547,9 +554,9 @@ Product trust and safety — align with backend auth rules when they land.
 
 | Document | Content |
 |----------|---------|
-| [DOCUMENTATION.md](../DOCUMENTATION.md) §4 | Full product screen breakdown (target) |
-| [DOCUMENTATION.md](../DOCUMENTATION.md) Appendix | Current repo routes, stack, mock data |
-| [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) | Phased delivery; Flutter UI can parallelize backend per plan notes |
+| [System Documentation]({{ '/documentation/' | relative_url }}#4-complete-screen-breakdown-flutter) §4 | Full product screen breakdown (target) |
+| [System Documentation — Appendix]({{ '/documentation/' | relative_url }}#appendix-current-flutter-codebase-implementation-snapshot) | Current repo routes, stack, mock data |
+| [Implementation Plan]({{ '/implementation/' | relative_url }}) | Phased delivery; Flutter UI can parallelize backend per plan notes |
 
 ---
 

@@ -1,6 +1,13 @@
+---
+title: Flutter architecture refactor
+layout: default
+nav_order: 7
+permalink: /flutter-architecture-refactor/
+---
+
 # Flutter client architecture refactor guide
 
-This document complements [SCREENS_REFACTOR_GUIDE.md](./SCREENS_REFACTOR_GUIDE.md). It covers **everything in `lib/` that is not “screens only”**: networking, services, Riverpod, models, shared UI utilities, routes, and how to test them.
+This document complements [Screens refactor guide]({{ '/screens-refactor-guide/' | relative_url }}) (repo: `SCREENS_REFACTOR_GUIDE.md`). It covers **everything in `lib/` that is not “screens only”**: networking, services, Riverpod, models, shared UI utilities, routes, and how to test them.
 
 **Audience:** Engineers changing data flow, API usage, or global app state.
 
@@ -144,7 +151,7 @@ flowchart TB
 1. **Core** — Document `ApiClient` behavior; avoid drive-by changes.  
 2. **Models + services** — Typed responses; thin service methods.  
 3. **Providers** — Split file only when `app_providers.dart` hurts velocity.  
-4. **Screens** — Follow [SCREENS_REFACTOR_GUIDE.md](./SCREENS_REFACTOR_GUIDE.md).  
+4. **Screens** — Follow [Screens refactor guide]({{ '/screens-refactor-guide/' | relative_url }}).  
 5. **Error UX** — Unify SnackBar/dialog copy via `user_safe_error` + small helpers.
 
 ---

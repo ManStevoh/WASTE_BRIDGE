@@ -27,16 +27,10 @@ plugins:
 # Legacy markdown in this folder — keep as repo reference only; not published as site pages
 exclude:
   - FLUTTER_AND_BACKEND_INVENTORY.md
-  - IMPLEMENTATION_STATUS.md
   - API_DOCUMENTATION.md
   - PHASE4_PAYMENTS.md
-  - SCREENS_REFACTOR_GUIDE.md
-  - UI_GUIDE.md
-  - ARCHITECTURE_REFACTOR_GUIDE.md
   - PEAK_LOAD.md
-  - PROGRAM_SETUP.md
   - RISK_REGISTER.md
   - BUSINESS_MODEL.md
-  - BACKEND_MODULES.md
   - DATABASE_DOCUMENTATION.md
   - DATABASE.md

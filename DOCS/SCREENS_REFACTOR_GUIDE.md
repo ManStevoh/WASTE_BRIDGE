@@ -1,12 +1,19 @@
+---
+title: Screens refactor guide
+layout: default
+nav_order: 10
+permalink: /screens-refactor-guide/
+---
+
 # Flutter screens refactor guide
 
 This document describes how to break up large screen files (historically `generator_screens.dart`, `recycler_screens.dart`, `collector_screens.dart`, `auth_screens.dart`) into **small, testable modules** without changing product behavior. Use it as a checklist during incremental refactors.
 
 **Audience:** Engineers touching `lib/features/generator/`, `recycler/`, `collector/`, or `auth/`.
 
-**Scope:** Flutter **screens and feature UI** only (splitting large screen files, section widgets, router imports). For **services, Riverpod, models, networking, and tests**, see [ARCHITECTURE_REFACTOR_GUIDE.md](./ARCHITECTURE_REFACTOR_GUIDE.md).
+**Scope:** Flutter **screens and feature UI** only (splitting large screen files, section widgets, router imports). For **services, Riverpod, models, networking, and tests**, see [Flutter architecture refactor]({{ '/flutter-architecture-refactor/' | relative_url }}) (repo: `ARCHITECTURE_REFACTOR_GUIDE.md`).
 
-**Related:** [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) (product phases); both refactor guides are **structural**, not product roadmap.
+**Related:** [Implementation Plan]({{ '/implementation/' | relative_url }}) (product phases); both refactor guides are **structural**, not product roadmap.
 
 ---
 
@@ -202,7 +209,7 @@ After each phase:
 
 ## 9. Related layers (services, providers, core, tests)
 
-This document does **not** prescribe how to split `AuthService`, `app_providers.dart`, or `ApiClient`. Those concerns are documented in **[ARCHITECTURE_REFACTOR_GUIDE.md](./ARCHITECTURE_REFACTOR_GUIDE.md)** so UI refactors stay independent from data-layer refactors.
+This document does **not** prescribe how to split `AuthService`, `app_providers.dart`, or `ApiClient`. Those concerns are documented in **[Flutter architecture refactor]({{ '/flutter-architecture-refactor/' | relative_url }})** so UI refactors stay independent from data-layer refactors.
 
 **Rule of thumb:** finish a **screen** split first; only then tighten services/providers if a screen change forces clearer boundaries (e.g. duplicated API calls).
 

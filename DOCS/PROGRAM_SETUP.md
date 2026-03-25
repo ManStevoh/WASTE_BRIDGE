@@ -1,6 +1,13 @@
+---
+title: Program setup (Phase 0)
+layout: default
+nav_order: 11
+permalink: /program-setup/
+---
+
 # Program setup and alignment (Phase 0)
 
-This document completes **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) — Phase 0**: scope, environments, business economics artifacts, risk governance, module boundaries, staging seed, API versioning, scaling posture, and partner sandbox policy.
+This document completes **[Implementation Plan]({{ '/implementation/' | relative_url }}) — Phase 0** (repo: `IMPLEMENTATION_PLAN.md`): scope, environments, business economics artifacts, risk governance, module boundaries, staging seed, API versioning, scaling posture, and partner sandbox policy.
 
 **Status:** Baseline **0.1–0.10** artifacts are in this repository (see sections below and linked files). Treat business-model tables and named owners in the risk register as **living**—update as the org and product mature.
 
@@ -44,10 +51,10 @@ Living register: **[RISK_REGISTER.md](./RISK_REGISTER.md)**. **Review:** at leas
 
 ## 0.5 Modular bounded contexts
 
-- **Architecture map:** [BACKEND_MODULES.md](./BACKEND_MODULES.md)
+- **Architecture map:** [Backend modules]({{ '/backend-modules/' | relative_url }})
 - **Code map (monolith today):** [`backend/app/Modules/README.md`](../backend/app/Modules/README.md)
 
-Bounded contexts (payments, marketplace, logistics, analytics) stay logically separated via controllers, models, and services until extracted per [BACKEND_MODULES.md](./BACKEND_MODULES.md).
+Bounded contexts (payments, marketplace, logistics, analytics) stay logically separated via controllers, models, and services until extracted per [Backend modules]({{ '/backend-modules/' | relative_url }}).
 
 ---
 
@@ -92,8 +99,8 @@ Optional HTTP headers for deprecations: `Deprecation`, `Sunset` (RFC 8594 style)
 |-------|-----------|
 | **Now** | Single primary DB (SQLite/MySQL/PostgreSQL per env). |
 | **Growth** | **Read replicas** for read-heavy reporting and list endpoints before sharding. |
-| **Multi-region / tenant** | **Partitioning** by `tenant_id` / region when [Phase 17](./IMPLEMENTATION_PLAN.md) multi-tenant work lands. |
-| **Redis** | **Single instance → cluster/HA** as cache/session/queue load grows ([IMPLEMENTATION_PLAN](./IMPLEMENTATION_PLAN.md) Phase 30). |
+| **Multi-region / tenant** | **Partitioning** by `tenant_id` / region when [Phase 17]({{ '/implementation/' | relative_url }}) multi-tenant work lands. |
+| **Redis** | **Single instance → cluster/HA** as cache/session/queue load grows ([IMPLEMENTATION_PLAN]({{ '/implementation/' | relative_url }}) Phase 30). |
 
 ---
 
@@ -106,7 +113,7 @@ Optional HTTP headers for deprecations: `Deprecation`, `Sunset` (RFC 8594 style)
 | **Data** | Synthetic or anonymized; **reset** allowed on schedule (e.g. weekly) for demo tenants — document in partner onboarding. |
 | **Flag** | `SANDBOX_API_ENABLED` in `backend/config/waste_bridge.php` reserved for future sandbox-only routes. |
 
-Coordinates with product **[Phase 26](./IMPLEMENTATION_PLAN.md)** public API / developer portal when built.
+Coordinates with product **[Phase 26]({{ '/implementation/' | relative_url }})** public API / developer portal when built.
 
 ---
 
@@ -114,9 +121,9 @@ Coordinates with product **[Phase 26](./IMPLEMENTATION_PLAN.md)** public API / d
 
 | Document | Role |
 |----------|------|
-| [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Master phased roadmap |
+| [Implementation Plan]({{ '/implementation/' | relative_url }}) | Master phased roadmap |
 | [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) | HTTP contract |
-| [DATABASE_STRUCTURE.md](./DATABASE_STRUCTURE.md) | Schema reference |
-| [BACKEND_MODULES.md](./BACKEND_MODULES.md) | Module map |
+| [Database Structure]({{ '/database-structure/' | relative_url }}) | Schema reference |
+| [Backend modules]({{ '/backend-modules/' | relative_url }}) | Module map |
 | [BUSINESS_MODEL.md](./BUSINESS_MODEL.md) | Internal economics template (0.3) |
 | [RISK_REGISTER.md](./RISK_REGISTER.md) | Operational risk table (0.4) |

@@ -1,6 +1,13 @@
+---
+title: Implementation status
+layout: default
+nav_order: 9
+permalink: /implementation-status/
+---
+
 # Waste Bridge — Implementation status vs plan
 
-This document maps **what exists in the repository today** to **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)**. It is a snapshot for planning and handover; update it when major capabilities ship.
+This document maps **what exists in the repository today** to the **[Implementation Plan]({{ '/implementation/' | relative_url }})** (repo: `IMPLEMENTATION_PLAN.md`). It is a snapshot for planning and handover; update it when major capabilities ship.
 
 **Scope:** `backend/` (Laravel API), `lib/` (Flutter client), and docs under `DOCS/`.
 
@@ -239,4 +246,4 @@ Aligned with the plan’s **Phase 35** direction (API-backed services):
 
 ---
 
-*Last updated: **2026-03-25** — Phase 4 completed in repo: B2C **Result/Timeout** webhooks (`WalletB2cPayoutCompletionService`), ledger **payout** columns, user + admin **CSV exports**, `WalletWithdrawalB2cFinalized` event; see [PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md). Flutter: `api_endpoints.dart` wallet + receipts; optional ledger export path `walletLedgerExport`. See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).*
+*Last updated: **2026-03-25** — Phase 4 completed in repo: B2C **Result/Timeout** webhooks (`WalletB2cPayoutCompletionService`), ledger **payout** columns, user + admin **CSV exports**, `WalletWithdrawalB2cFinalized` event; see [PHASE4_PAYMENTS.md](./PHASE4_PAYMENTS.md). Flutter: `api_endpoints.dart` wallet + receipts; optional ledger export path `walletLedgerExport`. See [Implementation Plan]({{ '/implementation/' | relative_url }}).*
