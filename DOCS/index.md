@@ -12,6 +12,7 @@ Welcome to the official documentation for **Waste Bridge**.
 
 ## 📚 Documentation
 
+- [System Documentation]({{ '/documentation/' | relative_url }}) — full product & platform (Sections 1–47 + Appendix)
 - [API Reference]({{ '/api/' | relative_url }})
 - [Implementation Plan]({{ '/implementation/' | relative_url }})
 - [Architecture]({{ '/architecture/' | relative_url }})

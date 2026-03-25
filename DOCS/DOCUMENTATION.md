@@ -1,3 +1,10 @@
+---
+title: System Documentation
+layout: default
+nav_order: 2
+permalink: /documentation/
+---
+
 # Waste Bridge Application — Full Developer & Enterprise Documentation
 
 This document describes the **product vision, platform architecture, and enterprise concerns** for Waste Bridge (Sections 1–19), **strategic platform expansion** (Sections 20–39), **order flow, risk, and localization** (Sections 40–42), **app & product roadmap** (Sections 43–47: concrete backlog items), and an **implementation snapshot** of the Flutter app in this repository (Appendix).

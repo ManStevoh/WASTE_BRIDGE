@@ -1,7 +1,7 @@
 ---
 title: Implementation Plan
 layout: default
-nav_order: 3
+nav_order: 4
 permalink: /implementation/
 ---
 
@@ -654,4 +654,4 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 
 ---
 
-*This plan is derived from [DOCUMENTATION.md](./DOCUMENTATION.md) and extended with execution ordering and cross-cutting steps above—including [scale](#scale-and-enterprise-readiness-cross-phase) and [enterprise horizons](#enterprise-completeness-and-roadmap-horizons-cross-phase). Parallelize where [Parallel execution model](#parallel-execution-model-critical-path) allows.*
+*This plan is derived from [System Documentation]({{ '/documentation/' | relative_url }}) and extended with execution ordering and cross-cutting steps above—including [scale](#scale-and-enterprise-readiness-cross-phase) and [enterprise horizons](#enterprise-completeness-and-roadmap-horizons-cross-phase). Parallelize where [Parallel execution model](#parallel-execution-model-critical-path) allows.*
