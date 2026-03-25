@@ -1,4 +1,6 @@
-# Jekyll + Just the Docs — GitHub Pages (use folder /DOCS in repo Settings → Pages)
+# Jekyll + Just the Docs — deployed via GitHub Actions (.github/workflows/jekyll-pages.yml).
+# In the repo: Settings → Pages → Build and deployment → Source: GitHub Actions (not “branch”).
+# Site URL: https://ManStevoh.github.io/<exact-repo-name>/ — baseurl below must match that repo name.
 
 title: Waste Bridge Docs
 description: Technical Documentation for Waste Bridge Platform
