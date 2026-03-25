@@ -1,0 +1,40 @@
+# Jekyll + Just the Docs — GitHub Pages (use folder /DOCS in repo Settings → Pages)
+
+title: Waste Bridge Docs
+description: Technical Documentation for Waste Bridge Platform
+
+remote_theme: just-the-docs/just-the-docs
+
+url: https://ManStevoh.github.io
+baseurl: "/WASTE_BRIDGE"
+
+permalink: pretty
+
+color_scheme: dark
+
+search_enabled: true
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-include-cache
+  - jekyll-seo-tag
+
+# Legacy markdown in this folder — keep as repo reference only; not published as site pages
+exclude:
+  - FLUTTER_AND_BACKEND_INVENTORY.md
+  - IMPLEMENTATION_STATUS.md
+  - API_DOCUMENTATION.md
+  - IMPLEMENTATION_PLAN.md
+  - PHASE4_PAYMENTS.md
+  - SCREENS_REFACTOR_GUIDE.md
+  - UI_GUIDE.md
+  - ARCHITECTURE_REFACTOR_GUIDE.md
+  - PEAK_LOAD.md
+  - PROGRAM_SETUP.md
+  - RISK_REGISTER.md
+  - DATABASE_STRUCTURE.md
+  - BUSINESS_MODEL.md
+  - BACKEND_MODULES.md
+  - DOCUMENTATION.md
+  - DATABASE_DOCUMENTATION.md
+  - DATABASE.md
