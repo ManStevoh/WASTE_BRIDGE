@@ -1,5 +1,6 @@
 /// Design tokens for spacing, radii, and touch targets.
 /// Prefer these over magic numbers in new UI; migrate existing screens opportunistically.
+library;
 
 abstract final class AppSpacing {
   static const double xs = 8;

@@ -2,14 +2,14 @@
 
 This document is the **single canonical database structure reference** for Waste Bridge. It merges the former **Database Reference** and **Database Documentation (Full Specification)** into one place.
 
-It describes the **target relational model** for the planned **Laravel** backend. The repository contains **no SQL migrations**; the schema is synthesized from:
+It describes the **target relational model** for the **Laravel** backend. The canonical spec below is synthesized from:
 
 - [`DOCUMENTATION.md`](./DOCUMENTATION.md) (product §8 and expansion §§20–39)
 - [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) (JSON resources and enums)
 - [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) (Phase 1+ migrations and domains)
 - [`lib/models/`](../lib/models/) (Flutter field names and types)
 
-**Implementation status:** The repo is a **Flutter client** with mock data. Backend target is **Laravel** with **MySQL** or **PostgreSQL** (or compatible). Column types below use **MySQL-style** names (`DECIMAL`, `DATETIME`); for PostgreSQL, use `NUMERIC`, `TIMESTAMPTZ`, `JSONB` where appropriate. **Never use floating point for money.**
+**Implementation status:** The repo includes a **Flutter** client and a **Laravel** API under `backend/` with **SQL migrations** implementing a growing subset of this schema (see migration files). Production DB target remains **MySQL** or **PostgreSQL** (or compatible); local dev may use **SQLite**. Column types below use **MySQL-style** names (`DECIMAL`, `DATETIME`); for PostgreSQL, use `NUMERIC`, `TIMESTAMPTZ`, `JSONB` where appropriate. **Never use floating point for money.**
 
 **Conventions**
 
@@ -22,6 +22,7 @@ It describes the **target relational model** for the planned **Laravel** backend
 | **Soft delete** | `deleted_at` on user-generated and legal-sensitive rows |
 | **Multi-tenant** | `tenant_id` on applicable tables once [§20](./DOCUMENTATION.md#20-super-admin--multi-tenant-architecture) ships |
 | **Enums** | `VARCHAR` with app validation, or lookup tables (`waste_types`, …) for extensibility |
+| **Optimistic locking** | Optional `version` (INT, default 0) on hot rows (`orders`, `pickup_requests`, `jobs`) if concurrent updates become an issue |
 
 **Schema naming (cross-reference):** Some docs use alternate table names for the same concept: **`orders`** here = commercial/escrow order (also referred to as `marketplace_orders` elsewhere). **`wallet_ledger_entries`** = append-only wallet ledger (product doc “transactions”; some specs call this table **`transactions`**). **`entry_type`** aligns with API **`transaction_type`** (`credit` / `debit`).
 
@@ -46,6 +47,8 @@ It describes the **target relational model** for the planned **Laravel** backend
 15. [Supplemental tables (extended specification)](#15-supplemental-tables-extended-specification)
 16. [Entity relationship overview](#16-entity-relationship-overview)
 17. [JSON ↔ column mapping (detail)](#17-json--column-mapping-detail)
+18. [Referential integrity and constraints](#18-referential-integrity-and-constraints)
+19. [Authentication and token storage (Laravel)](#19-authentication-and-token-storage-laravel)
 
 ---
 
@@ -130,11 +133,11 @@ Maps product table **`transactions`** [§8] and Flutter **`AppTransaction`** (fi
 | `order_id` | BIGINT FK | YES | |
 | `pickup_request_id` | BIGINT FK | YES | |
 | `job_id` | BIGINT FK | YES | |
-| `idempotency_key` | VARCHAR(64) | YES | UNIQUE (per provider) |
+| `idempotency_key` | VARCHAR(64) | YES | Scoped uniqueness — see [§18](#18-referential-integrity-and-constraints) |
 | `provider_reference` | VARCHAR(128) | YES | M-Pesa / PSP id |
 | `created_at` | DATETIME | NO | |
 
-**Indexes:** `(wallet_id, created_at DESC)`, `(user_id, created_at DESC)`, `(status)`, partial UNIQUE on `idempotency_key` where not null.
+**Indexes:** `(wallet_id, created_at DESC)`, `(user_id, created_at DESC)`, `(status)`. **Idempotency:** enforce `UNIQUE (wallet_id, idempotency_key)` where `idempotency_key` is not null (MySQL 8+ functional / partial index; PostgreSQL partial UNIQUE), or `UNIQUE (provider, idempotency_key)` if a `provider` column is added for PSP-scoped keys.
 
 ---
 
@@ -176,12 +179,33 @@ Maps product table **`transactions`** [§8] and Flutter **`AppTransaction`** (fi
 | `seller_user_id` | BIGINT FK | NO | Household |
 | `listing_id` | BIGINT FK | YES | |
 | `status` | VARCHAR(32) | NO | `marketplace_order_status` |
-| `escrow_amount` | DECIMAL(14,2) | YES | |
+| `subtotal_amount` | DECIMAL(14,2) | YES | Line items / pre-fee goods total |
+| `platform_fee_amount` | DECIMAL(14,2) | YES | Platform commission; may be derived from ledger only in MVP |
+| `tax_amount` | DECIMAL(14,2) | YES | If/when tax is modeled explicitly |
+| `escrow_amount` | DECIMAL(14,2) | YES | Amount held in escrow (often aligns with buyer obligation) |
 | `escrow_status` | VARCHAR(24) | YES | `none`, `held`, `released`, `refunded` |
 | `currency` | CHAR(3) | NO | `KES` |
 | `created_at`, `updated_at` | DATETIME | NO | |
 
 **Indexes:** `(buyer_user_id, status)`, `(seller_user_id, status)`, `(status, created_at DESC)`.
+
+**Fees and splits:** Platform commission, tax, and payouts may be recorded only as **`wallet_ledger_entries`** (`category` = `commission`, etc.) in early releases; add `subtotal_amount` / `platform_fee_amount` / `tax_amount` when reporting needs fixed columns. Optional line-level detail: [§2.5.1](#251-order_line_items-optional).
+
+#### 2.5.1 order_line_items (optional)
+
+Use when marketplace orders need **itemized** pricing beyond a single listing link.
+
+| Column | Type | Nullable | Notes |
+|--------|------|----------|--------|
+| `id` | BIGINT PK | NO | |
+| `order_id` | BIGINT FK | NO | → `orders.id` |
+| `listing_id` | BIGINT FK | YES | → `waste_listings.id` |
+| `description` | VARCHAR(255) | YES | Snapshot label |
+| `quantity_kg` | DECIMAL(12,3) | NO | |
+| `unit_price_per_kg` | DECIMAL(14,2) | YES | |
+| `line_total` | DECIMAL(14,2) | NO | |
+
+**Indexes:** `(order_id)`.
 
 ---
 
@@ -234,9 +258,11 @@ Maps **`WasteRequest`** ([API §6.1](./API_DOCUMENTATION.md#61-wasterequest)). O
 
 ---
 
-### 2.7 `jobs`
+### 2.7 `jobs` (Laravel: `pickup_jobs`)
 
 Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collector work unit; links to `pickup_requests`. [§40.3](./DOCUMENTATION.md#403-collector-job-alignment-client-app).
+
+**Implementation note:** The reference Laravel app uses the physical table name **`pickup_jobs`** because Laravel’s default **`jobs`** table is reserved for the **queue worker** (`queue`, `payload`, `attempts`, …). API routes remain **`GET /api/v1/jobs`**; only the relational table name differs.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|--------|
@@ -270,6 +296,8 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 - `jobs.order_id` optional denormalization for reporting.
 - State mapping must be validated in application layer: marketplace [§40.1](./DOCUMENTATION.md#401-order-state-machine-marketplace--escrow) vs request vs job ([§40.3](./DOCUMENTATION.md#403-collector-job-alignment-client-app)).
 
+**API / JSON (Job vs DB):** The Flutter **`Job`** model is minimal ([`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) §6.2). The API should still expose **`publicId`** (maps to `jobs.public_id`), **`requestId`** (→ `pickup_request_id`), and when the client adds fields: **`collectorUserId`** (→ `collector_user_id`), **`orderId`** (→ `order_id`), **`createdAt` / `updatedAt`**. Until the client ships those keys, the backend may omit them or return them for forward compatibility.
+
 ---
 
 ## 4. Trust, compliance, and security
@@ -292,6 +320,8 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 **Indexes:** `(user_id, created_at DESC)`, `(status)`.
 
+**Multiple files:** One row per **submission attempt** or per **document** is acceptable. If users upload **several files in one review cycle**, prefer **`kyc_documents`** ([§15.9](#159-kyc_documents)) linked to a parent `kyc_submissions` row (or replace single `storage_path` with child rows only).
+
 ---
 
 ### 4.2 `ratings`
@@ -313,15 +343,16 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ---
 
-### 4.3 `referral_codes` / redemptions
+### 4.3 Referrals — canonical MVP vs normalized
 
 [IMPLEMENTATION 1.7](./IMPLEMENTATION_PLAN.md), [§10.5](./IMPLEMENTATION_PLAN.md).
 
-**Option A — on `users`:** `referral_code`, `referred_by_user_id` (already in §2.1).
+| Strategy | Use when |
+|----------|----------|
+| **Canonical MVP (Option A)** | **`users.referral_code`**, **`users.referred_by_user_id`**, reward lines on **`wallet_ledger_entries`** — sufficient for simple refer-a-friend and reporting. |
+| **Normalized (Option B)** | **`referrals`** + **`referral_redemptions`** ([§15.2](#152-referrals-normalized)) when you need caps, expiry, audit per code, or idempotent reward replay separate from `users`. |
 
-**Option B — `referral_redemptions`:** `id`, `referrer_user_id`, `referee_user_id`, `code_used`, `reward_ledger_entry_id`, `created_at`, idempotency for rewards.
-
-**Indexes:** `(code_used, referee_user_id)` UNIQUE.
+**Indexes (Option B):** `(code_used, referee_user_id)` UNIQUE on redemptions.
 
 ---
 
@@ -533,6 +564,8 @@ High-level tables to plan migrations when each phase lands; not all are required
 | **Financial reconciliation** | `wallet_ledger_entries`, `payment_intents` | `idempotency_key`, `provider_reference`, time range |
 | **Admin** | `disputes`, `kyc_submissions` | `(status, created_at)` |
 | **FKs** | All child tables | Index FK columns used in JOINs |
+| **Geo (bounding box / nearby)** | `waste_listings`, `pickup_requests` | Composite `(latitude, longitude)` rarely optimal alone; **PostgreSQL:** GiST on `ll_to_earth` / PostGIS `GEOGRAPHY`; **MySQL 8:** `SPATIAL` POINT + `ST_Distance_Sphere` or app-level bbox filter on `(latitude, longitude)` with latitude/longitude range indexes |
+| **Full-text search** | `waste_listings`, `users` (display) | Optional `FULLTEXT` (MySQL) or `tsvector` (PostgreSQL) on title/location fields when search ships |
 
 **Additional practices:** Partial indexes where helpful (e.g. unread `notifications` where `read_at IS NULL`); keyset pagination covering indexes on list feeds (`created_at`, `id`); partition high-volume time-series (`location_pings`, `audit_logs`, ledger) when volume warrants; **read replicas** for reporting; **warehouse** for BI [§34](./DOCUMENTATION.md#34-data-warehouse--big-data). Compliance: soft deletes on PII-heavy tables per [§18](./DOCUMENTATION.md#18-legal--compliance).
 
@@ -560,13 +593,15 @@ High-level tables to plan migrations when each phase lands; not all are required
 
 ## 14. Flutter model mapping
 
-| Flutter model | Primary tables |
-|---------------|----------------|
-| `AppUser` | `users` |
-| `WasteRequest` | `pickup_requests` (+ related `orders`, photos) |
-| `Job` | `jobs` |
-| `AppTransaction` | `wallet_ledger_entries` (and/or dedicated recycler purchase lines) |
-| `AppNotification` | `notifications` |
+| Flutter model | Primary tables | Notes |
+|---------------|----------------|--------|
+| `AppUser` | `users` | Client omits `phone`, `locale`, `wallet_balance_cached` today; API may still return them for profile screens. |
+| `WasteRequest` | `pickup_requests` | Join `orders`, `waste_listings`, `users` (collector) as needed for full API payloads. |
+| `Job` | `jobs` | Client fields are a subset; DB has `order_id`, `collector_user_id`, `public_id`, timestamps — see [§3](#3-order-vs-job-alignment). |
+| `AppTransaction` | `wallet_ledger_entries` | Ledger has more columns (`category`, `status`, FKs); map into API or extend the Flutter model later. |
+| `AppNotification` | `notifications` | DB has `read_at`; **Flutter model has no `readAt` yet** — add when marking notifications read client-side. |
+| — | `waste_listings` | **No `WasteListing` model in `lib/models/`** yet; marketplace UIs should add one when listing CRUD ships. Backend table remains canonical for seller inventory. |
+| — | `orders` | **No dedicated Dart model** in-repo; represent via API DTOs / future `MarketplaceOrder` when the app implements marketplace flows. |
 
 Enum strings must match [API_DOCUMENTATION.md §7](./API_DOCUMENTATION.md#7-enumerations).
 
@@ -627,7 +662,7 @@ If you prefer explicit many-to-many instead of only `pickup_requests.order_id` /
 
 ### 15.7 Sessions and auth (framework)
 
-Laravel **sessions**, **personal_access_tokens** (Sanctum), or JWT tables as chosen — standard framework DDL, not duplicated here.
+See [§19](#19-authentication-and-token-storage-laravel) for the canonical Laravel target. Framework DDL (`sessions`, `password_reset_tokens`, Sanctum `personal_access_tokens`) is standard; not duplicated as full CREATE statements here.
 
 ### 15.8 Platform expansion (detailed stubs)
 
@@ -649,6 +684,20 @@ When phases in [§10](#10-platform-expansion-20--39) land, add concrete columns:
 | **Automation** | `automation_rules` (`rule_type`, `config` JSON, `priority`, `active`) |
 | **ML** | Batch/warehouse tables — typically **outside** OLTP |
 
+### 15.9 `kyc_documents`
+
+Child rows when a single KYC case has **multiple uploads** (see [§4.1](#41-kyc_submissions)).
+
+| Column | Type | Notes |
+|--------|------|--------|
+| `id` | BIGINT PK | |
+| `kyc_submission_id` | BIGINT FK | → `kyc_submissions.id` |
+| `document_type` | VARCHAR(64) | e.g. `national_id`, `proof_of_address` |
+| `storage_path` | VARCHAR(512) | Secure storage |
+| `created_at` | DATETIME | |
+
+**Indexes:** `(kyc_submission_id)`.
+
 ---
 
 ## 16. Entity relationship overview
@@ -659,13 +708,17 @@ erDiagram
   users ||--o{ pickup_requests : generates
   users ||--o{ wallets : owns
   wallets ||--o{ wallet_ledger_entries : ledger
+  users ||--o{ wallet_ledger_entries : user_ledger
   waste_listings ||--o| pickup_requests : spawns
+  waste_listings ||--o{ orders : listing_order
   pickup_requests ||--|| jobs : operational
   users ||--o{ jobs : collects
   orders }o--|| users : buyer
   orders }o--|| users : seller
+  orders ||--o{ pickup_requests : commercial_link
   pickup_requests ||--o{ disputes : raises
   users ||--o{ notifications : receives
+  orders ||--o{ wallet_ledger_entries : order_ledger
 ```
 
 ---
@@ -685,10 +738,55 @@ API responses use **camelCase** ([`API_DOCUMENTATION.md` §6](./API_DOCUMENTATIO
 | `receiptId` | `receipt_id` |
 | `co2SavedKg` | `co2_saved_kg` |
 | `requestId` (on Job) | `jobs.pickup_request_id` (expose as `requestId` in API) |
+| `collectorUserId` | `jobs.collector_user_id` (recommended API field when exposing collector) |
+| `orderId` | `jobs.order_id`, `pickup_requests.order_id` |
+| `readAt` | `notifications.read_at` |
 | `kycStatus` | `users.kyc_status` |
 | `subscriptionPlan` | `users.subscription_plan` |
+| `listingId` | `waste_listings.public_id` or internal id per API convention |
+| `subtotalAmount` | `orders.subtotal_amount` |
+| `platformFeeAmount` | `orders.platform_fee_amount` |
+| `taxAmount` | `orders.tax_amount` |
 
 Laravel API Resources or transformers should own this mapping.
+
+---
+
+## 18. Referential integrity and constraints
+
+**Foreign keys:** Prefer explicit FK constraints in migrations. Common patterns:
+
+| Relationship | ON DELETE | Notes |
+|--------------|-----------|--------|
+| Child row purely owned by parent (`order_line_items` → `orders`) | `CASCADE` | |
+| `pickup_requests` → `orders` | `SET NULL` | If order removed, operational history may remain without commercial link |
+| `jobs` → `pickup_requests` | `RESTRICT` or `CASCADE` | Choose by product rule: deleting a request may be forbidden if a job exists |
+| `wallet_ledger_entries` | `RESTRICT` | Append-only; never delete parent rows in normal flows |
+| `users` (referenced widely) | `RESTRICT` | Soft-delete users (`deleted_at`) instead of hard delete where possible |
+
+**CHECK constraints (where supported):** Non-negative `amount` on ledger lines; `escrow_amount >= 0`; enum-like columns validated in app + optional DB CHECK for critical tables.
+
+**Idempotency:** `wallet_ledger_entries`: unique composite as in [§2.3](#23-wallet_ledger_entries). `payment_intents`: keep global `UNIQUE (idempotency_key)` or scope by `user_id` per product rules.
+
+**Concurrency:** Optional `version` column on `orders`, `pickup_requests`, `jobs` for optimistic locking; alternatively rely on `updated_at` comparison in the application layer.
+
+---
+
+## 19. Authentication and token storage (Laravel)
+
+Aligned with [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) §3 (Bearer access token, optional refresh).
+
+| Mechanism | Storage | Notes |
+|-----------|---------|--------|
+| **Password hashing** | `users.password` | bcrypt/Argon2 per Laravel defaults |
+| **API tokens (Sanctum)** | `personal_access_tokens` | Access tokens; store abilities/scopes as needed |
+| **Refresh tokens** | Opaque refresh: dedicated table e.g. `refresh_tokens` (`id`, `user_id`, `token_hash`, `expires_at`, `revoked_at`) **or** Sanctum token rotation policy — pick one and document in API |
+| **Session / web** | `sessions` | If cookie-based admin exists |
+| **Password reset** | `password_reset_tokens` (Laravel default) or `password_resets` table name per version |
+| **Email verification** | `email_verified_at` on `users` + signed URLs; optional `email_verification_tokens` if not using Laravel’s built-in flow only |
+| **OTP** | [`otp_verifications`](#45-otp_verifications-optional) | SMS/email codes |
+
+**Out of domain OLTP:** Laravel **`failed_jobs`**, **`job_batches`**, **`cache`** (if DB driver), **`migrations`** — provision via framework; not listed in §§2–9.
 
 ---
 
@@ -698,6 +796,7 @@ Laravel API Resources or transformers should own this mapping.
 |---------|--------|
 | 1.0 | Target schema from product docs, API contract, implementation plan, and Flutter models |
 | 2.0 | Merged `DATABASE.md` and `DATABASE_DOCUMENTATION.md` into this single file; added §§15–17 (supplemental tables, ER diagram, JSON mapping detail) |
+| 2.1 | Order economics columns + optional `order_line_items`; KYC `kyc_documents`; referral MVP canon; expanded indexes (geo/search); Flutter/API gaps; ER diagram; JSON mapping; §§18–19 integrity and auth |
 
 For execution order, see [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) Phase 1.
 

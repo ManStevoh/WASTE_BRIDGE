@@ -1,4 +1,4 @@
-enum UserRole { generator, collector, recycler }
+enum UserRole { generator, collector, recycler, admin }
 
 enum RequestStatus { pending, accepted, pickedUp, completed, cancelled }
 

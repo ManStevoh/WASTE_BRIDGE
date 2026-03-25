@@ -17,6 +17,7 @@ AppUser _$AppUserFromJson(Map<String, dynamic> json) => AppUser(
   isVerified: json['isVerified'] as bool? ?? false,
   subscriptionPlan: json['subscriptionPlan'] as String? ?? 'Free',
   referralCode: json['referralCode'] as String?,
+  collectorAvailable: json['collectorAvailable'] as bool?,
 );
 
 Map<String, dynamic> _$AppUserToJson(AppUser instance) => <String, dynamic>{
@@ -28,12 +29,14 @@ Map<String, dynamic> _$AppUserToJson(AppUser instance) => <String, dynamic>{
   'isVerified': instance.isVerified,
   'subscriptionPlan': instance.subscriptionPlan,
   'referralCode': instance.referralCode,
+  'collectorAvailable': instance.collectorAvailable,
 };
 
 const _$UserRoleEnumMap = {
   UserRole.generator: 'generator',
   UserRole.collector: 'collector',
   UserRole.recycler: 'recycler',
+  UserRole.admin: 'admin',
 };
 
 const _$KycStatusEnumMap = {

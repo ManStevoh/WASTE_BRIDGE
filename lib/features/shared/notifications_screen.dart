@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:waste_bridge/core/theme/app_tokens.dart';
+import 'package:waste_bridge/core/ui/user_safe_error.dart';
 import 'package:waste_bridge/features/shared/app_widgets.dart';
 import 'package:waste_bridge/providers/app_providers.dart';
 
@@ -14,17 +16,27 @@ class NotificationsScreen extends ConsumerWidget {
       body: notifications.when(
         data: (items) {
           if (items.isEmpty) {
-            return const CenterState(
-              title: 'No notifications',
-              subtitle: 'System notifications will show here.',
+            return RefreshIndicator(
+              onRefresh: () => ref.read(notificationsProvider.notifier).fetch(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(AppSpacing.md),
+                children: const [
+                  CenterState(
+                    title: 'No notifications',
+                    subtitle: 'System notifications will show here.',
+                  ),
+                ],
+              ),
             );
           }
           return RefreshIndicator(
             onRefresh: () => ref.read(notificationsProvider.notifier).fetch(),
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(AppSpacing.md),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
               itemBuilder: (_, i) {
                 final n = items[i];
                 return Card(
@@ -39,7 +51,11 @@ class NotificationsScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => CenterState(title: 'Error', subtitle: '$e', icon: Icons.error),
+        error: (e, _) => CenterState(
+          title: 'Could not load notifications',
+          subtitle: userVisibleError(e),
+          icon: Icons.error_outline,
+        ),
       ),
     );
   }

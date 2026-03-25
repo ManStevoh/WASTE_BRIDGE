@@ -12,6 +12,8 @@ This document turns [DOCUMENTATION.md](./DOCUMENTATION.md) into a **single order
 - **Client** = Flutter app (`c:\WASTE_BRIDGE`).
 - **Parallel tracks:** Backend, Flutter, testing, security hardening, and documentation run **concurrently** where dependencies allow; release **gates** are explicit below.
 - **Testing (§16)** starts in **Phase 1** (smoke/API tests for new endpoints), not only when **Phase 13** is “started” on the calendar.
+- **Scale and enterprise readiness** are summarized in [Scale and enterprise readiness (cross-phase)](#scale-and-enterprise-readiness-cross-phase); individual phases add concrete steps without changing overall dependency order.
+- **Enterprise completeness and roadmap horizons** (what is core vs expansion vs optional depth) are in [Enterprise completeness and roadmap horizons](#enterprise-completeness-and-roadmap-horizons-cross-phase).
 
 ---
 
@@ -31,7 +33,92 @@ The **numbered phase order** below is **dependency order** for the backend platf
 
 ---
 
+## Scale and enterprise readiness (cross-phase)
+
+This layer does **not** replace numbered phases; it makes scaling, observability, and enterprise operations **explicit** so early choices (stateless API, queues, caching) align with later **Phase 17**, **29**, and **30** work.
+
+### Where phases contribute
+
+| Concern | Primary phases | Notes |
+|--------|------------------|--------|
+| Stateless API, queue categories, infra direction | **0**, **14**, **30** | JWT-friendly horizontal scaling; separate **priority** (latency-sensitive) vs **background** jobs. |
+| Rate limits, peak-load targets, security edge | **2**, **28**, **26** | Document targets; partners get published limits and versioning. |
+| Load/stress testing feeding tuning | **13**, **30** | Staging stress before major events; fix regressions before prod scale-up. |
+| Dashboards, SLOs, health, feature flags | **14** | Real-time operational visibility; phased rollouts for risky features. |
+| Multi-tenant isolation and regions | **17** | Isolation model + expansion without unnecessary downtime. |
+| Analytics/warehouse at scale | **29** | ETL throughput, retention, avoid warehouse load on OLTP. |
+| ML compute | **25** | Async/batch heavy work off the transactional path. |
+| Release safety | **40** | Canary/phased rollout; API + client rollback; gates tied to **13**. |
+| Developer onboarding at team growth | **32** | New engineers ramp with architecture and contracts. |
+
+### Scale readiness checklist
+
+Use this as a living table (update status as you implement). It complements the **risk register** (**0.4**).
+
+| Area | Status | Next steps |
+|------|--------|------------|
+| API horizontal scaling | Planned | Stateless app servers; load balancer + multiple PHP/Laravel workers (**14**); autoscaling policy when traffic grows. |
+| Database scaling | Planned | Read replicas first; partition/shard strategy aligned with **17** (tenant/region). |
+| Redis / cache | Partial → target | Start single instance (**30**); move to cluster/high-availability when metrics warrant. |
+| Queue throughput | Partial | Define priority vs background queues (**0.8**); benchmark concurrent jobs (**13.8**); watch depth alerts (**14.9**). |
+| Observability | Partial | Dashboards: latency, job assignment throughput, payment success/failure (**14.9**). |
+| Offline / mobile | Planned | **18**; stress large offline caches and sync in **13** where relevant. |
+| Multi-tenant isolation | Planned | Document model in **17.5** (shared schema vs separate DB). |
+| Edge / DDoS / secrets | Planned | **28.4–28.5**; encryption at rest for KYC and wallet-sensitive data. |
+
+---
+
+## Enterprise completeness and roadmap horizons (cross-phase)
+
+Most “full enterprise” capabilities already have a home in numbered phases (e.g. **10**/**21** engagement, **22** IoT, **23** ESG, **25** ML, **28** fraud/WAF). This section gives a **visual roadmap**, a **theme → phase map** for anything still easy to miss, and **new rows below** only where the plan needed an explicit line item.
+
+### Visual roadmap (core → expansion → optional depth)
+
+```mermaid
+flowchart TB
+    subgraph core["Core platform — Phases 0 to 12"]
+        A["Foundation, marketplace, payments, logistics, realtime, notifications, analytics MVP, smart features, gamification, disputes, automation"]
+    end
+    subgraph quality["Quality and operations — 13 to 16"]
+        B["Testing, DevOps, legal or compliance, admin web"]
+    end
+    subgraph expansion["Expansion — 17 to 32"]
+        C["Multi-tenant, offline, inventory, subscriptions, community, IoT, carbon or ESG, B2B, ML, public API, geo, advanced security, warehouse, performance, admin mobile, onboarding"]
+    end
+    subgraph product["Product delivery and governance — 33 to 40"]
+        D["Localization, Flutter suite, trust features, validation, release and handover"]
+    end
+    subgraph strategic["Strategic backlog and differentiators"]
+        E["37 major epics, 38 community and education — deepen 22, 23, 25, 37 as priorities allow"]
+    end
+    core --> quality
+    quality --> expansion
+    expansion --> product
+    product --> strategic
+```
+
+### Theme map (enterprise-grade coverage)
+
+| Theme | Already covered in phases | Added or tightened in this doc |
+|------|---------------------------|--------------------------------|
+| High availability and resilience | **14** (Docker, CI/CD, backups, **14.9** health) | **14.11** multi-region or DR, LB posture; **14.12** blue/green, migration checks in CI |
+| API and partner ecosystem | **26**, **0.7**, **2.8** | **0.10** sandbox; **26.5** OAuth2 or key rotation, developer portal |
+| Advanced analytics and reporting | **8**, **29**, **16.3**, **24.3** | **8.3** near–real-time ops metrics; **29.5** scheduled compliance or finance or ESG reports |
+| AI and ML beyond MVP | **9**, **25**, **12**, **22** | **25.6** feedback loop and tie-in to classification or routing accuracy |
+| Continuous security | **2**, **28**, **13** | **28.6** pen test cadence, optional bug bounty |
+| Enterprise workflows | **11.5**, **20.2**, **24** | **24.4** bulk onboarding, contract SLAs, escalation |
+| Offline and mobile resilience | **18**, **37.2**, **35.2** | **18.5** conflict merge rules, local notification queue when flaky |
+| DevOps and automation | **14**, **40.6–40.7** | **14.12** (overlap with blue/green and CI migration checks) |
+| Monitoring and observability | **14.6**, **14.9** | **14.13** business KPIs alongside technical SLOs |
+| Governance and audit | **2.4**, **11**, **15**, **39.3** | **40.8** release governance and audit completeness for money or KYC paths |
+| Community and engagement | **10**, **21**, **38** | No new row — use table for visibility |
+| Future-ready IoT, ESG, partners | **22**, **23**, **26**, **47** | No new row — **37** and strategic priority pick depth |
+
+---
+
 ## Phase 0 — Program setup and alignment
+
+**Status:** **Complete** (see [`PROGRAM_SETUP.md`](./PROGRAM_SETUP.md), [`BUSINESS_MODEL.md`](./BUSINESS_MODEL.md), [`RISK_REGISTER.md`](./RISK_REGISTER.md), staging seeder, `backend/config/waste_bridge.php`, `backend/app/Modules/README.md`).
 
 | Step | What to implement | Doc ref |
 |------|-------------------|---------|
@@ -42,6 +129,11 @@ The **numbered phase order** below is **dependency order** for the backend platf
 | 0.5 | Plan **modular bounded contexts** in code (payments, marketplace, logistics, analytics) even if starting as a monolith—clear module folders and API boundaries. | §36 |
 | 0.6 | **Staging seed data**: deterministic users, listings, and jobs for QA and demos (scripts or migrations); never enable in production. | §16, §17 |
 | 0.7 | **API versioning policy** (doc): URL prefix (`/api/v1`) or version headers; how mobile clients pin versions; **deprecation** notice period. | §7 |
+| 0.8 | **Scaling posture (design-time)**: **stateless** HTTP/API layer (no sticky sessions beyond what the platform requires); JWT aligns with horizontal scaling; document **queue categories**: **priority** (user-visible latency) vs **background** (reports, heavy async). | Scale |
+| 0.9 | **Data/cache direction**: how the DB will scale first (**read replicas**), then **partitioning** (e.g. by tenant/region when **17** applies); Redis path **single instance → cluster/high availability** as load grows (**30**). | Scale, §17 |
+| 0.10 | **Partner or developer sandbox**: isolated API base URL, synthetic data, key issuance; **reset** policy for demos and integrator testing (coordinates with **26.5**). | §7, Enterprise |
+
+**Phase 0 deliverables in this repo:** [PROGRAM_SETUP.md](./PROGRAM_SETUP.md) (single index), [BUSINESS_MODEL.md](./BUSINESS_MODEL.md), [RISK_REGISTER.md](./RISK_REGISTER.md), [`backend/database/seeders/StagingSeeder.php`](../backend/database/seeders/StagingSeeder.php), [`backend/config/waste_bridge.php`](../backend/config/waste_bridge.php), [`backend/app/Modules/README.md`](../backend/app/Modules/README.md), plus [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) §15 and [`backend/config/queue.php`](../backend/config/queue.php) (0.8).
 
 ---
 
@@ -71,6 +163,7 @@ The **numbered phase order** below is **dependency order** for the backend platf
 | 2.5 | **Secure file upload** pipeline: validation (type, size), storage, optional malware scanning policy. | §10, §12 |
 | 2.6 | **Account verification (OTP)**: request code, verify, expiry, resend throttles; wire to **SMS** when **7.3** exists; dev/staging may use fixed codes. Aligns **§4** OTP with **§43** mobile auth. | §4, §10, §43 |
 | 2.7 | **KYC API**: authenticated **submit** (multipart to **2.5** storage), **list my submissions**, **status** on user/profile for **35.4**; admin review hooks to **16.1**. Depends on **1.7** schema. | §2, §43, §45 |
+| 2.8 | **Document expected peak targets** per critical route group (auth, marketplace, wallet, pickup); revise after **13.4** / **13.8** and production metrics. | §10, Scale |
 
 ---
 
@@ -140,6 +233,7 @@ The **numbered phase order** below is **dependency order** for the backend platf
 |------|-------------------|---------|
 | 8.1 | Metrics APIs or admin queries: waste volumes over time, revenue/margin (admin), environmental impact estimates, collector performance. | §13 |
 | 8.2 | **Admin dashboard** data dependencies (feeds web admin in Phase 15). | §5, §13 |
+| 8.3 | **Operations-oriented metrics** (near–real-time where feasible): pickups in progress, collector utilization, dispute backlog—surface in **16** and support **14.9** / **14.13**. | §13, Enterprise |
 
 ---
 
@@ -202,6 +296,7 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 13.5 | Define release criteria tied to **risk register** (e.g., payment and auth paths). | §16, §41 |
 | 13.6 | **CI gate**: run Laravel + Flutter tests on every merge; block deploy on auth, wallet, and payment test failures. | §16, §41 |
 | 13.7 | **Contract checks** for mobile: OpenAPI or shared fixtures so **35.1** does not drift from API. | §16, §43 |
+| 13.8 | **Staging stress tests**: multi-actor marketplace scenarios (households, collectors, recyclers) before major launches; results inform **30** tuning; keep **2.8** peak-load table current. | §16, Scale |
 
 ---
 
@@ -217,6 +312,11 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 14.6 | **Observability**: structured logging, **error tracking** (e.g. Sentry or equivalent), optional APM; alert on payment and auth failures. | §17 |
 | 14.7 | **Deep links infrastructure**: Android **App Links** (`assetlinks.json`), iOS **Universal Links** (AASA), domain ownership; coordinates with **35.3** and **40.2**. | §17, §43 |
 | 14.8 | **Database migration strategy**: backward-compatible migrations for zero-downtime where required; document rollback for high-risk changes. | §17 |
+| 14.9 | **Dashboards & SLOs**: API latency (e.g. p50/p95), job assignment throughput, payment success/failure; **health checks** and alerts for **queue depth** and worker failure; orchestrator/supervisor policy for **restarting** failed workers. | §17, Scale |
+| 14.10 | **Feature flags** (config or third-party): gate risky features; optional **percentage rollouts** for scale testing before full release. | Scale |
+| 14.11 | **High availability**: **load balancers** in front of stateless app tier; **multi-region or DR** targets (RPO/RTO); automated recovery aligns with **14.9** (workers, queues). | §17, Enterprise |
+| 14.12 | **Deployment automation**: **blue/green** or parallel deploy slots where **40.6** needs fast rollback; **CI checks** on migrations (syntax, safe-order, optional dry-run against ephemeral DB). | §17, Enterprise |
+| 14.13 | **Business KPIs** in observability: pickups completed, revenue signals, ESG or diversion proxies—alongside technical metrics (**14.9**). | Enterprise |
 
 ---
 
@@ -249,6 +349,7 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 17.2 | **Super Admin dashboard**: create/manage tenants (e.g., Mombasa, Nairobi, Kisumu). | §20 |
 | 17.3 | **Per-tenant configuration**: pricing, surcharges, waste categories, sorting rules, local regulations checklists. | §20 |
 | 17.4 | Align **strategic backlog** item “multi-tenant / regional config.” | §46 |
+| 17.5 | **Tenant isolation**: document **shared schema vs separate database** (or hybrid) per tenant class; **per-tenant feature toggles**; **region/tenant expansion** runbook (add tenant/region with minimal downtime). | §20, Scale |
 
 ---
 
@@ -260,6 +361,7 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 18.2 | **Background sync** with server authority and conflict rules. | §21 |
 | 18.3 | **Cached marketplace** slices and user-owned data for offline reads. | §21 |
 | 18.4 | UX: optimistic UI with rollback (**R2**). | §21, §41 |
+| 18.5 | **Offline conflict resolution**: explicit merge or last-writer-wins rules per entity; **queue notifications locally** when the network is unreliable, flush when online (**35.2**). | §21, Enterprise |
 
 ---
 
@@ -321,6 +423,7 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 24.1 | **Bulk waste contracts** and negotiated pricing. | §29 |
 | 24.2 | **Scheduled pickups** at scale (sites, branches). | §29 |
 | 24.3 | **Company dashboards**: volumes, costs, ESG exports, invoicing. | §29 |
+| 24.4 | **Enterprise onboarding and SLAs**: bulk org or site onboarding (CSV/API), **contract-level SLA** rules with breach alerts, **escalation** for high-value accounts. | §29, Enterprise |
 
 ---
 
@@ -332,6 +435,8 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 25.2 | **Demand prediction** by area and season. | §30 |
 | 25.3 | **Waste generation trends**. | §30 |
 | 25.4 | **Dynamic pricing** with guardrails and explainability. | §30 |
+| 25.5 | **Async / batch** training and inference for heavy workloads; use queues so OLTP stays responsive (**30.3**). | §30, Scale |
+| 25.6 | **ML feedback loop**: measure and improve models from production outcomes (assignment quality, pricing acceptance, route efficiency); tie **9.2** classification or **22** signals into retraining where applicable. | §30, §15, Enterprise |
 
 ---
 
@@ -342,6 +447,8 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 26.1 | Partner **REST** (optional GraphQL) with documentation. | §31 |
 | 26.2 | **Webhooks** for order, payment, dispute events. | §31 |
 | 26.3 | **API keys, scopes, rate limits** per integration. | §31 |
+| 26.4 | **Partner-facing versioning & deprecation**: published schedule; **documented rate limits** per tier aligned with **2.8**; breaking-change communication. | §31, §7, Scale |
+| 26.5 | **Partner authentication**: **OAuth2** (e.g. client credentials or authorization code) **or** **API key rotation** policy; **developer portal** (OpenAPI or reference, **0.10** sandbox, key self-service where safe). | §31, Enterprise |
 
 ---
 
@@ -362,6 +469,9 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 28.1 | **Device fingerprinting** and session risk signals. | §33 |
 | 28.2 | **Fraud detection**: velocity, collusion, refund abuse (**R3**). | §33, §41 |
 | 28.3 | Alerts and automated holds per policy; friction vs. risk balance. | §33 |
+| 28.4 | **Edge/WAF**: DDoS mitigation and API firewall / rate rules at CDN or gateway where applicable. | §33, Scale |
+| 28.5 | **Secrets rotation** and **multi-region** redundancy for critical credentials; **encryption at rest** for KYC stores and wallet/financial PII per policy. | §33, §41, Scale |
+| 28.6 | **Third-party penetration testing** on a defined cadence; optional **bug bounty** or coordinated disclosure policy. | §33, §41, Enterprise |
 
 ---
 
@@ -372,6 +482,8 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 29.1 | **ETL/ELT** from Laravel and domain events to warehouse/lake. | §34 |
 | 29.2 | Historical reporting, cohort analysis (product, finance, ESG). | §34 |
 | 29.3 | Optional **BI** (Metabase, Looker, etc.). | §34 |
+| 29.4 | **Batch vs streaming** ingestion for high-volume events; **data retention** tiers (hot vs archive) so warehouse growth does not pressure OLTP or storage budgets. | §34, Scale |
+| 29.5 | **Automated or scheduled reports** for compliance, finance, and ESG stakeholders (extends **23.3**, **24.3**; align **15**). | §34, Enterprise |
 
 ---
 
@@ -382,6 +494,7 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 30.1 | **Redis** (or similar) for caching hot reads and config. | §35 |
 | 30.2 | **Image pipeline**: resize, CDN, modern formats for listings and proofs. | §35 |
 | 30.3 | **Queues** for notifications, payouts, heavy reports, sync jobs (**R9**). | §35, §41 |
+| 30.4 | **DB and app throughput**: query/index review, N+1 avoidance, connection pooling; **horizontal scaling** hooks (stateless workers, autoscaling); **Redis** cluster or HA if single instance is saturated (**0.9**). | §35, Scale |
 
 ---
 
@@ -401,6 +514,7 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 32.1 | **Guided onboarding** per role (household, collector, recycler). | §38 |
 | 32.2 | Short tutorials and **tooltips** for marketplace, wallet, first pickup. | §38 |
 | 32.3 | Instrument **activation metrics**: first listing, first completed pickup, time-to-value. | §38 |
+| 32.4 | **Engineering onboarding**: architecture summary, local environment, links to runbooks (**14.5**), API contracts (**13.7**), and this plan’s scale section. | §38, Scale |
 
 ---
 
@@ -496,6 +610,9 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 | 40.3 | Runbook: incident response, rollback, provider outages (**R1**). | §17, §41 |
 | 40.4 | Keep **DOCUMENTATION.md** and this plan synchronized when scope changes. | §1–47, Appendix |
 | 40.5 | **API deprecation to clients**: communicate breaking changes to mobile (min app version, feature flags, sunset dates) per **0.7**—coordinate with **35.1** and store releases. | §7, 0.7 |
+| 40.6 | **Canary or phased releases** for backend and mobile when risk is high; **rollback**: compatible API version, safe DB migration reversal or forward-fix, and **previous store build** available if needed. | §17, Scale |
+| 40.7 | **Release gates**: **13** (tests; **13.8** where scale-sensitive) must pass; if **14.9** shows latency or error regressions, address in **30** before broad prod rollout. | §16, Scale |
+| 40.8 | **Governance gates** for high-risk releases: legal or compliance sign-off where required; confirm **audit trails** for wallet, KYC, and payment-adjacent actions (**2.4**, **11**) before ship. | §41, Enterprise |
 
 ---
 
@@ -505,11 +622,11 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 
 **Parallel (do not block on “Phase 33” for API work):**
 
-- **13** (testing) and **13.6–13.7** from **Phase 1** onward; **14** early for CI (**14.2**) and observability (**14.6**).
+- **13** (testing) and **13.6–13.8** from **Phase 1** onward; **14** early for CI (**14.2**), observability (**14.6**, **14.9–14.13**), HA (**14.11–14.12**), and [scale checklist](#scale-and-enterprise-readiness-cross-phase).
 - **34–36** Flutter: UI and trust features **alongside** backend; **35.1** as soon as **2.1** + **1.4** are usable; **35.2–35.6** when **6–7**, **2.7**, **5.5**, **6.4**, **4.5**, **10.5** exist as needed.
 - **33** localization: overlap **34–35**; start **33.1** glossary before full string freeze.
 
-**After core 12:** expansion **17–32**, then **33** (if not already overlapping), **38** differentiators (**38.4** content decision), **37** strategic backlog as scheduled, **39** validation, **40** release (**40.5** before major API breaks).
+**After core 12:** expansion **17–32**, then **33** (if not already overlapping), **38** differentiators (**38.4** content decision), **37** strategic backlog as scheduled, **39** validation, **40** release (**40.5** before major API breaks; **40.6–40.8** for phased rollout, release gates, and governance where needed).
 
 **Last step in this document:** **Phase 40, Step 40.4** — documentation sync and continuous improvement.
 
@@ -528,4 +645,4 @@ Treat **§16** as **continuous from Phase 1**, not a single late milestone.
 
 ---
 
-*This plan is derived from [DOCUMENTATION.md](./DOCUMENTATION.md) and extended with execution ordering and cross-cutting steps above. Use it as a roadmap; parallelize where [Parallel execution model](#parallel-execution-model-critical-path) allows.*
+*This plan is derived from [DOCUMENTATION.md](./DOCUMENTATION.md) and extended with execution ordering and cross-cutting steps above—including [scale](#scale-and-enterprise-readiness-cross-phase) and [enterprise horizons](#enterprise-completeness-and-roadmap-horizons-cross-phase). Parallelize where [Parallel execution model](#parallel-execution-model-critical-path) allows.*

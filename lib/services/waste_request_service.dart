@@ -1,18 +1,18 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
-import 'package:waste_bridge/models/app_enums.dart';
 import 'package:waste_bridge/models/waste_request.dart';
 import 'package:waste_bridge/services/api_endpoints.dart';
-import 'package:waste_bridge/services/mock_data.dart';
 
 class WasteRequestService {
   WasteRequestService(this._dio);
   final Dio _dio;
 
   Future<List<WasteRequest>> getRequests() async {
-    await _dio.get(ApiEndpoints.requests);
-    return List<WasteRequest>.from(MockData.requests);
+    final response = await _dio.get(ApiEndpoints.requests);
+    final data = response.data as Map<String, dynamic>;
+    final items = data['items'] as List<dynamic>? ?? [];
+    return items
+        .map((e) => WasteRequest.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<WasteRequest> requestPickup({
@@ -21,110 +21,73 @@ class WasteRequestService {
     required String location,
     DateTime? scheduledAt,
   }) async {
-    await _dio.post(
-      ApiEndpoints.requestPickup,
+    final response = await _dio.post(
+      ApiEndpoints.requests,
       data: {
         'wasteType': wasteType,
         'quantityKg': quantityKg,
         'location': location,
-        'scheduledAt': scheduledAt?.toIso8601String(),
+        if (scheduledAt != null) 'scheduledAt': scheduledAt.toIso8601String(),
       },
     );
-    final distanceKm = _estimateDistanceKm(location);
-    final unitPricePerKg = _priceFor(wasteType, distanceKm);
-    final totalAmount = unitPricePerKg * quantityKg;
-    final request = WasteRequest(
-      id: 'wr-${DateTime.now().millisecondsSinceEpoch}',
-      wasteType: wasteType,
-      quantityKg: quantityKg,
-      location: location,
-      status: RequestStatus.pending,
-      createdAt: DateTime.now(),
-      suggestedCollectorName: _suggestCollector(wasteType, quantityKg),
-      estimatedEtaMinutes: 25,
-      scheduledAt: scheduledAt,
-      distanceKm: distanceKm,
-      unitPricePerKg: unitPricePerKg,
-      totalAmount: totalAmount,
-      co2SavedKg: _estimateCo2Savings(wasteType, quantityKg),
-    );
-    MockData.requests.insert(0, request);
-    return request;
+    return WasteRequest.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<void> reportDispute({
     required String requestId,
     required String reason,
   }) async {
-    await _dio.post('/requests/$requestId/dispute', data: {'reason': reason});
-    final index = MockData.requests.indexWhere((r) => r.id == requestId);
-    if (index == -1) return;
-    MockData.requests[index] = MockData.requests[index].copyWith(
-      isDisputed: true,
-      disputeReason: reason,
+    await _dio.post(
+      ApiEndpoints.requestDispute(requestId),
+      data: {'reason': reason},
     );
   }
 
   Future<void> resolveDispute({
     required String requestId,
   }) async {
-    await _dio.post('/requests/$requestId/dispute/resolve');
-    final index = MockData.requests.indexWhere((r) => r.id == requestId);
-    if (index == -1) return;
-    MockData.requests[index] = MockData.requests[index].copyWith(
-      isDisputed: false,
-      disputeReason: null,
-      paymentStatus: PaymentStatus.paid,
-      receiptId: MockData.requests[index].receiptId ?? 'RCPT-${requestId.toUpperCase()}',
-      receiptIssuedAt: DateTime.now(),
-    );
+    await _dio.post(ApiEndpoints.requestDisputeResolve(requestId));
   }
 
-  Future<WasteRequest> updateRequestStatus({
-    required String requestId,
-    required RequestStatus status,
-  }) async {
-    await _dio.post(
-      ApiEndpoints.updateStatus,
-      data: {'requestId': requestId, 'status': status.name},
-    );
-    final index = MockData.requests.indexWhere((r) => r.id == requestId);
-    if (index < 0) throw Exception('Request not found');
-    final now = DateTime.now();
-    final current = MockData.requests[index];
-    final updated = current.copyWith(
-      status: status,
-      acceptedAt: status == RequestStatus.accepted ? now : current.acceptedAt,
-      pickedUpAt: status == RequestStatus.pickedUp ? now : current.pickedUpAt,
-      completedAt: status == RequestStatus.completed ? now : current.completedAt,
-      cancelledAt: status == RequestStatus.cancelled ? now : current.cancelledAt,
-    );
-    MockData.requests[index] = updated;
-    return updated;
-  }
-
+  /// Uploads proof images via multipart (`before_photo` / `after_photo`) or falls back to URL strings.
   Future<WasteRequest> uploadPhotoProof({
     required String requestId,
+    String? beforeFilePath,
+    String? afterFilePath,
     String? beforePickupPhotoUrl,
     String? afterPickupPhotoUrl,
   }) async {
-    await _dio.post(
-      ApiEndpoints.updateStatus,
+    if (beforeFilePath != null || afterFilePath != null) {
+      final map = <String, dynamic>{};
+      if (beforeFilePath != null) {
+        map['before_photo'] = await MultipartFile.fromFile(
+          beforeFilePath,
+          filename: beforeFilePath.split(RegExp(r'[/\\]')).last,
+        );
+      }
+      if (afterFilePath != null) {
+        map['after_photo'] = await MultipartFile.fromFile(
+          afterFilePath,
+          filename: afterFilePath.split(RegExp(r'[/\\]')).last,
+        );
+      }
+      final response = await _dio.post(
+        ApiEndpoints.requestProof(requestId),
+        data: FormData.fromMap(map),
+      );
+      return WasteRequest.fromJson(response.data as Map<String, dynamic>);
+    }
+
+    final response = await _dio.post(
+      ApiEndpoints.requestProof(requestId),
       data: {
-        'requestId': requestId,
-        'beforePickupPhotoUrl': beforePickupPhotoUrl,
-        'afterPickupPhotoUrl': afterPickupPhotoUrl,
+        if (beforePickupPhotoUrl != null)
+          'beforePickupPhotoUrl': beforePickupPhotoUrl,
+        if (afterPickupPhotoUrl != null)
+          'afterPickupPhotoUrl': afterPickupPhotoUrl,
       },
     );
-    final index = MockData.requests.indexWhere((r) => r.id == requestId);
-    if (index < 0) throw Exception('Request not found');
-    final current = MockData.requests[index];
-    final updated = current.copyWith(
-      beforePickupPhotoUrl: beforePickupPhotoUrl ?? current.beforePickupPhotoUrl,
-      afterPickupPhotoUrl: afterPickupPhotoUrl ?? current.afterPickupPhotoUrl,
-    );
-    MockData.requests[index] = updated;
-    return updated;
+    return WasteRequest.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<WasteRequest> submitRatings({
@@ -132,57 +95,13 @@ class WasteRequestService {
     double? generatorRating,
     double? collectorRating,
   }) async {
-    await _dio.post(
-      ApiEndpoints.updateStatus,
+    final response = await _dio.post(
+      ApiEndpoints.requestRatings(requestId),
       data: {
-        'requestId': requestId,
-        'generatorRating': generatorRating,
-        'collectorRating': collectorRating,
+        if (generatorRating != null) 'generatorRating': generatorRating,
+        if (collectorRating != null) 'collectorRating': collectorRating,
       },
     );
-    final index = MockData.requests.indexWhere((r) => r.id == requestId);
-    if (index < 0) throw Exception('Request not found');
-    final current = MockData.requests[index];
-    final updated = current.copyWith(
-      generatorRating: generatorRating ?? current.generatorRating,
-      collectorRating: collectorRating ?? current.collectorRating,
-    );
-    MockData.requests[index] = updated;
-    return updated;
-  }
-
-  double _priceFor(String wasteType, double distanceKm) {
-    final type = wasteType.toLowerCase();
-    final base = switch (type) {
-      'plastic' => 420,
-      'paper' => 260,
-      'metal' => 520,
-      'organic' => 180,
-      _ => 220,
-    };
-    return base - (distanceKm * 2);
-  }
-
-  double _estimateDistanceKm(String location) {
-    return location.toLowerCase().contains('lekki') ? 9.5 : 5.0;
-  }
-
-  double _estimateCo2Savings(String wasteType, double quantityKg) {
-    final factor = switch (wasteType.toLowerCase()) {
-      'plastic' => 1.8,
-      'paper' => 1.2,
-      'metal' => 2.6,
-      'organic' => 0.7,
-      _ => 1.0,
-    };
-    return quantityKg * factor;
-  }
-
-  String _suggestCollector(String wasteType, double quantityKg) {
-    final type = wasteType.toLowerCase();
-    if (type.contains('organic')) return 'BioCycle Team';
-    if (quantityKg >= 20) return 'HeavyLift Collectors';
-    if (type.contains('metal')) return 'IronLoop Riders';
-    return 'Kola Rider';
+    return WasteRequest.fromJson(response.data as Map<String, dynamic>);
   }
 }

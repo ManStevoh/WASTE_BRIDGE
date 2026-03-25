@@ -20,7 +20,7 @@ This guide describes **how the Flutter UI is structured today**, **design conven
 1. **Theme first** — Prefer `Theme.of(context).colorScheme`, `textTheme`, and component themes over hard-coded colors except where the design system explicitly fixes a value (e.g. light scaffold background).
 2. **Tokens second** — Prefer `AppSpacing` / `AppRadius` from `lib/core/theme/app_tokens.dart` over new magic numbers for padding and corners.
 3. **Async UI** — Lists and dashboards driven by providers use `AsyncValue.when`: `data`, `loading`, `error` (prefer `CenterState` with an error icon).
-4. **Shared building blocks** — Reuse `AppSectionCard` and `CenterState` from `lib/features/shared/app_widgets.dart` before adding one-off layouts.
+4. **Shared building blocks** — Reuse `AppSectionCard` and `CenterState` from `lib/features/shared/app_widgets.dart` (barrel over `app_section_card.dart` + `center_state.dart`) before adding one-off layouts.
 5. **Navigation** — New screens get a `GoRoute` in `lib/routes/app_router.dart`; use path parameters for IDs (`/generator/track/:id`). Follow [§7.1](#71-navigation-ux-rules).
 
 ---
@@ -116,12 +116,17 @@ lib/
     theme/app_tokens.dart     # Spacing, radius, touch target constants
     constants/app_constants.dart
   features/
-    auth/auth_screens.dart    # Onboarding, role, login, register
+    auth/auth.dart            # Barrel; onboarding, role, login, register (+ widgets/)
     generator/…               # Generator (household) flows
     collector/…               # Collector flows (includes maps)
     recycler/…                # Recycler flows
     shared/
-      app_widgets.dart        # AppSectionCard, CenterState
+      app_widgets.dart        # Barrel: AppSectionCard, CenterState
+      app_section_card.dart
+      center_state.dart
+      info_row.dart
+      status_timeline_step.dart
+      shared.dart             # Optional barrel: app_widgets + notifications_screen
       notifications_screen.dart
   routes/app_router.dart      # All routes and auth redirect
 ```
@@ -186,7 +191,7 @@ How users **move through the app** at a high level. Use this to avoid ad-hoc nav
 |------|--------------|--------|
 | **Generator: request → track → complete** | Home → Request pickup → (submit) → Track / history | User should always find the request again from home or history — avoid orphan screens. |
 | **Collector: browse → accept → execute** | Dashboard → Open jobs / list → Job detail → Accept → Active job | Linear progression; **Back** from detail returns to list. |
-| **Recycler: deliveries → detail** | Dashboard → Delivery / transaction detail | Read-heavy; keep statuses visible on list rows when possible. |
+| **Recycler: marketplace → purchase → pay** | Dashboard → Listing detail → Order screen → M-Pesa; **My purchases** for history | Pull-to-refresh on feed and purchase list; statuses on order + pickup + job |
 
 Align new features with these arcs so onboarding and support documentation stay simple.
 
@@ -194,7 +199,7 @@ Align new features with these arcs so onboarding and support documentation stay 
 
 ## 9. Reusable widgets
 
-Defined in `lib/features/shared/app_widgets.dart`.
+Defined in `lib/features/shared/app_section_card.dart` and `center_state.dart`, re-exported from `app_widgets.dart`.
 
 ### `AppSectionCard`
 
@@ -297,6 +302,8 @@ Standard **Material 3** mappings so developers do not invent one-off controls. E
 
 **Do not** leave screens **blank** on error; **do not** expose stack traces to end users.
 
+**Implementation:** Use `userVisibleError` from `lib/core/ui/user_safe_error.dart` for `AsyncValue` error UI and SnackBars after failed API calls (maps `DioException` timeouts / connection issues and server `message` when present).
+
 ---
 
 ## 12. Screen patterns
@@ -324,7 +331,7 @@ Standard **Material 3** mappings so developers do not invent one-off controls. E
 requests.when(
   data: (items) { /* ListView or AppSectionCard + mapping */ },
   loading: () => const Center(child: CircularProgressIndicator()),
-  error: (e, _) => CenterState(title: 'Error', subtitle: '$e', icon: Icons.error),
+  error: (e, _) => CenterState(title: '…', subtitle: userVisibleError(e), icon: Icons.error_outline),
 )
 ```
 
@@ -382,9 +389,9 @@ Use **one obvious primary action** per role home screen to reduce confusion. Pro
 |------|--------------------|-------------------|
 | **Generator** | **Request Pickup** — creates demand | Recent requests, impact, categories |
 | **Collector** | **Open** active job or **Accept** from available list — earning focus | Earnings today, wallet, map |
-| **Recycler** | **Details** on incoming deliveries / **Browse** materials (when marketplace exists) | Transactions history |
+| **Recycler** | **Browse** the **marketplace** feed (fixed-price listings) → open a listing → **purchase** → **pay** (M-Pesa) → track **order / pickup / job** on the order screen | **My purchases** (buyer orders), **transactions** (wallet) for other roles |
 
-Implementation today maps to `GeneratorHomeScreen` (“Request Pickup”), collector dashboard (earnings + active job + open jobs), and `RecyclerDashboardScreen` (deliveries + materials). When adding features, keep **role vocabulary** distinct (e.g. “job” vs “request” vs “delivery”) and document in copy.
+Implementation today maps to `GeneratorHomeScreen` (“Request Pickup” + “Post listing to marketplace”), collector dashboard (earnings + active job + open jobs), and `RecyclerDashboardScreen` (marketplace feed with pull-to-refresh, **My purchases** CTA, listing detail → order → payment). When adding features, keep **role vocabulary** distinct (e.g. “job” vs “request” vs “order”) and document in copy.
 
 ---
 
@@ -404,8 +411,9 @@ Implementation today maps to `GeneratorHomeScreen` (“Request Pickup”), colle
 
 ### Recycler (`features/recycler/`)
 
-- Dashboard: incoming deliveries list, material chips.
-- Transactions: `ListView.separated` with `Card` + `ListTile`, **12** px separator (`AppSpacing.sm`).
+- **Dashboard:** Marketplace feed (`marketplaceFeedProvider`) inside `AppSectionCard`; **pull-to-refresh** (`RefreshIndicator`); primary path = tap listing → **RecyclerListingDetailScreen** → create order → **PurchaseDetailScreen** (`/recycler/order/:orderId`) for status, M-Pesa pay, pickup/job context. **FilledButton** “My purchases” → buyer order list.
+- **Listing detail / order:** `AppSpacing` tokens, themed `Text` / `InputDecoration` (no ad-hoc `OutlineInputBorder` overrides); errors via `userVisibleError` (`lib/core/ui/user_safe_error.dart`) + `CenterState` / SnackBar — not raw exceptions.
+- **Transactions (recycler):** Buyer orders with `RefreshIndicator` + `ListView.separated`, **`AppSpacing.sm`** separators. Non-recyclers: wallet ledger list with the same spacing pattern.
 
 ### Auth (`features/auth/`)
 

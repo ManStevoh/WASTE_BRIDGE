@@ -14,6 +14,7 @@ class AppUser {
     this.isVerified = false,
     this.subscriptionPlan = 'Free',
     this.referralCode,
+    this.collectorAvailable,
   });
 
   final String id;
@@ -24,6 +25,8 @@ class AppUser {
   final bool isVerified;
   final String subscriptionPlan;
   final String? referralCode;
+  /// When [role] is [UserRole.collector], server-driven availability for matching.
+  final bool? collectorAvailable;
 
   factory AppUser.fromJson(Map<String, dynamic> json) =>
       _$AppUserFromJson(json);

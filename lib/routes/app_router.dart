@@ -1,10 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:waste_bridge/features/auth/auth_screens.dart';
-import 'package:waste_bridge/features/collector/collector_screens.dart';
-import 'package:waste_bridge/features/generator/generator_screens.dart';
-import 'package:waste_bridge/features/recycler/recycler_screens.dart';
-import 'package:waste_bridge/features/shared/notifications_screen.dart';
+import 'package:waste_bridge/features/auth/auth.dart';
+import 'package:waste_bridge/models/marketplace_listing.dart';
+import 'package:waste_bridge/features/collector/collector.dart';
+import 'package:waste_bridge/features/generator/generator.dart';
+import 'package:waste_bridge/features/recycler/recycler.dart';
+import 'package:waste_bridge/features/shared/shared.dart';
 import 'package:waste_bridge/providers/app_providers.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -40,6 +42,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'impact',
             builder: (context, state) => const ImpactDashboardScreen(),
+          ),
+          GoRoute(
+            path: 'create-listing',
+            builder: (context, state) => const CreateListingScreen(),
           ),
           GoRoute(
             path: 'track/:id',
@@ -84,9 +90,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RecyclerDashboardScreen(),
         routes: [
           GoRoute(
-            path: 'delivery/:id',
-            builder: (context, state) =>
-                DeliveryDetailsScreen(deliveryId: state.pathParameters['id']!),
+            path: 'listing',
+            builder: (context, state) {
+              final listing = state.extra as MarketplaceListing?;
+              if (listing == null) {
+                return const Scaffold(
+                  body: Center(child: Text('No listing selected.')),
+                );
+              }
+              return RecyclerListingDetailScreen(listing: listing);
+            },
+          ),
+          GoRoute(
+            path: 'order/:orderId',
+            builder: (context, state) => PurchaseDetailScreen(
+              orderPublicId: state.pathParameters['orderId']!,
+            ),
           ),
           GoRoute(
             path: 'transactions',
