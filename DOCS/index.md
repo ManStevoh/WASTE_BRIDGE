@@ -16,6 +16,7 @@ Welcome to the official documentation for **Waste Bridge**.
 - [API Reference]({{ '/api/' | relative_url }})
 - [Implementation Plan]({{ '/implementation/' | relative_url }})
 - [Architecture]({{ '/architecture/' | relative_url }})
+- [Database Structure]({{ '/database-structure/' | relative_url }}) — canonical schema & tables
 
 ---
 

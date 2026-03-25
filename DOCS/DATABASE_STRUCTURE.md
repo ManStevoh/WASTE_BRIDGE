@@ -1,13 +1,20 @@
+---
+title: Database Structure
+layout: default
+nav_order: 6
+permalink: /database-structure/
+---
+
 # Waste Bridge — Database structure (canonical)
 
 This document is the **single canonical database structure reference** for Waste Bridge. It merges the former **Database Reference** and **Database Documentation (Full Specification)** into one place.
 
 It describes the **target relational model** for the **Laravel** backend. The canonical spec below is synthesized from:
 
-- [`DOCUMENTATION.md`](./DOCUMENTATION.md) (product §8 and expansion §§20–39)
+- [System Documentation]({{ '/documentation/' | relative_url }}) (product §8 and expansion §§20–39); repo file `DOCUMENTATION.md`
 - [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) (JSON resources and enums)
-- [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) (Phase 1+ migrations and domains)
-- [`lib/models/`](../lib/models/) (Flutter field names and types)
+- [Implementation Plan]({{ '/implementation/' | relative_url }}) (Phase 1+ migrations and domains); repo file `IMPLEMENTATION_PLAN.md`
+- `lib/models/` in the repository (Flutter field names and types)
 
 **Implementation status:** The repo includes a **Flutter** client and a **Laravel** API under `backend/` with **SQL migrations** implementing a growing subset of this schema (see migration files). Production DB target remains **MySQL** or **PostgreSQL** (or compatible); local dev may use **SQLite**. Column types below use **MySQL-style** names (`DECIMAL`, `DATETIME`); for PostgreSQL, use `NUMERIC`, `TIMESTAMPTZ`, `JSONB` where appropriate. **Never use floating point for money.**
 
@@ -20,7 +27,7 @@ It describes the **target relational model** for the **Laravel** backend. The ca
 | **IDs** | Internal `BIGINT UNSIGNED` PK; **public** string IDs (`public_id`, ULID/UUID) for API parity with Flutter |
 | **Timestamps** | `created_at`, `updated_at`; lifecycle fields where needed |
 | **Soft delete** | `deleted_at` on user-generated and legal-sensitive rows |
-| **Multi-tenant** | `tenant_id` on applicable tables once [§20](./DOCUMENTATION.md#20-super-admin--multi-tenant-architecture) ships |
+| **Multi-tenant** | `tenant_id` on applicable tables once [§20]({{ '/documentation/' | relative_url }}#20-super-admin--multi-tenant-architecture) ships |
 | **Enums** | `VARCHAR` with app validation, or lookup tables (`waste_types`, …) for extensibility |
 | **Optimistic locking** | Optional `version` (INT, default 0) on hot rows (`orders`, `pickup_requests`, `jobs`) if concurrent updates become an issue |
 
@@ -65,7 +72,7 @@ Store values as **lowercase strings** matching the API (see [`API_DOCUMENTATION.
 | **kyc_status** | `notSubmitted`, `pending`, `verified`, `rejected` |
 | **wallet_entry_type** | `credit`, `debit` |
 | **notification_type** | `pickupAssigned`, `collectorArriving`, `deliveryCompleted` (+ extend as needed) |
-| **marketplace_order_status** | Align with [§40.1](./DOCUMENTATION.md#401-order-state-machine-marketplace--escrow): `created`, `accepted`, `in_transit`, `delivered`, `completed`, `cancelled`, `disputed` (normalize naming in one migration) |
+| **marketplace_order_status** | Align with [§40.1]({{ '/documentation/' | relative_url }}#401-order-state-machine-marketplace--escrow): `created`, `accepted`, `in_transit`, `delivered`, `completed`, `cancelled`, `disputed` (normalize naming in one migration) |
 
 ---
 
@@ -73,7 +80,7 @@ Store values as **lowercase strings** matching the API (see [`API_DOCUMENTATION.
 
 ### 2.1 `users`
 
-Product [§8](./DOCUMENTATION.md#8-database-schema-detailed): `id`, `name`, `email`, `phone`, `role`, `wallet_balance`, `created_at`. **`AppUser`** adds KYC, verification, subscription, referral.
+Product [§8]({{ '/documentation/' | relative_url }}#8-database-schema-detailed): `id`, `name`, `email`, `phone`, `role`, `wallet_balance`, `created_at`. **`AppUser`** adds KYC, verification, subscription, referral.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|--------|
@@ -90,7 +97,7 @@ Product [§8](./DOCUMENTATION.md#8-database-schema-detailed): `id`, `name`, `ema
 | `subscription_plan` | VARCHAR(64) | NO | Default `Free` |
 | `referral_code` | VARCHAR(32) | YES | UNIQUE when set |
 | `referred_by_user_id` | BIGINT FK → users.id | YES | |
-| `locale` | CHAR(5) | NO | `en` / `sw` [§42](./DOCUMENTATION.md#42-localization-english--kiswahili) |
+| `locale` | CHAR(5) | NO | `en` / `sw` [§42]({{ '/documentation/' | relative_url }}#42-localization-english--kiswahili) |
 | `wallet_balance_cached` | DECIMAL(14,2) | NO | Optional denormalization; omit if balance only from `wallets` |
 | `email_verified_at` | DATETIME | YES | |
 | `created_at`, `updated_at` | DATETIME | NO | |
@@ -143,7 +150,7 @@ Maps product table **`transactions`** [§8] and Flutter **`AppTransaction`** (fi
 
 ### 2.4 `waste_listings`
 
-[§8](./DOCUMENTATION.md#8-database-schema-detailed): `id`, `user_id`, `type`, `quantity`, `price`, `location`, `status`.
+[§8]({{ '/documentation/' | relative_url }}#8-database-schema-detailed): `id`, `user_id`, `type`, `quantity`, `price`, `location`, `status`.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|--------|
@@ -168,7 +175,7 @@ Maps product table **`transactions`** [§8] and Flutter **`AppTransaction`** (fi
 
 ### 2.5 `orders` (commercial / escrow)
 
-[§3](./DOCUMENTATION.md#3-full-marketplace-system-core), [§40.1](./DOCUMENTATION.md#401-order-state-machine-marketplace--escrow), [IMPLEMENTATION 1.3](./IMPLEMENTATION_PLAN.md). **Commercial** lifecycle separate from operational pickup/job.
+[§3]({{ '/documentation/' | relative_url }}#3-full-marketplace-system-core), [§40.1]({{ '/documentation/' | relative_url }}#401-order-state-machine-marketplace--escrow), [IMPLEMENTATION 1.3]({{ '/implementation/' | relative_url }}). **Commercial** lifecycle separate from operational pickup/job.
 
 | Column | Type | Nullable | Notes |
 |--------|------|----------|--------|
@@ -246,7 +253,7 @@ Maps **`WasteRequest`** ([API §6.1](./API_DOCUMENTATION.md#61-wasterequest)). O
 | `collector_rating` | DECIMAL(3,2) | YES | |
 | `is_disputed` | BOOLEAN | NO | Default false |
 | `dispute_reason` | TEXT | YES | |
-| `receipt_id` | VARCHAR(64) | YES | [§44](./DOCUMENTATION.md#44-trust-payments--engagement) |
+| `receipt_id` | VARCHAR(64) | YES | [§44]({{ '/documentation/' | relative_url }}#44-trust-payments--engagement) |
 | `receipt_issued_at` | DATETIME | YES | |
 | `co2_saved_kg` | DECIMAL(12,4) | NO | Default 0 |
 | `updated_at` | DATETIME | NO | |
@@ -260,7 +267,7 @@ Maps **`WasteRequest`** ([API §6.1](./API_DOCUMENTATION.md#61-wasterequest)). O
 
 ### 2.7 `jobs` (Laravel: `pickup_jobs`)
 
-Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collector work unit; links to `pickup_requests`. [§40.3](./DOCUMENTATION.md#403-collector-job-alignment-client-app).
+Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collector work unit; links to `pickup_requests`. [§40.3]({{ '/documentation/' | relative_url }}#403-collector-job-alignment-client-app).
 
 **Implementation note:** The reference Laravel app uses the physical table name **`pickup_jobs`** because Laravel’s default **`jobs`** table is reserved for the **queue worker** (`queue`, `payload`, `attempts`, …). API routes remain **`GET /api/v1/jobs`**; only the relational table name differs.
 
@@ -294,7 +301,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 - `pickup_requests.order_id` links operational flow to **escrow** when the pickup is part of a marketplace sale.
 - `jobs.order_id` optional denormalization for reporting.
-- State mapping must be validated in application layer: marketplace [§40.1](./DOCUMENTATION.md#401-order-state-machine-marketplace--escrow) vs request vs job ([§40.3](./DOCUMENTATION.md#403-collector-job-alignment-client-app)).
+- State mapping must be validated in application layer: marketplace [§40.1]({{ '/documentation/' | relative_url }}#401-order-state-machine-marketplace--escrow) vs request vs job ([§40.3]({{ '/documentation/' | relative_url }}#403-collector-job-alignment-client-app)).
 
 **API / JSON (Job vs DB):** The Flutter **`Job`** model is minimal ([`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) §6.2). The API should still expose **`publicId`** (maps to `jobs.public_id`), **`requestId`** (→ `pickup_request_id`), and when the client adds fields: **`collectorUserId`** (→ `collector_user_id`), **`orderId`** (→ `order_id`), **`createdAt` / `updatedAt`**. Until the client ships those keys, the backend may omit them or return them for forward compatibility.
 
@@ -304,7 +311,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ### 4.1 `kyc_submissions`
 
-[IMPLEMENTATION 1.7](./IMPLEMENTATION_PLAN.md), [§43](./DOCUMENTATION.md#43-mobile-near-term-roadmap-flutter) KYC UI.
+[IMPLEMENTATION 1.7]({{ '/implementation/' | relative_url }}), [§43]({{ '/documentation/' | relative_url }}#43-mobile-near-term-roadmap-flutter) KYC UI.
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -326,7 +333,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ### 4.2 `ratings`
 
-[IMPLEMENTATION 1.7](./IMPLEMENTATION_PLAN.md), [§5.5](./IMPLEMENTATION_PLAN.md) logistics.
+[IMPLEMENTATION 1.7]({{ '/implementation/' | relative_url }}), [§5.5]({{ '/implementation/' | relative_url }}) logistics.
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -345,7 +352,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ### 4.3 Referrals — canonical MVP vs normalized
 
-[IMPLEMENTATION 1.7](./IMPLEMENTATION_PLAN.md), [§10.5](./IMPLEMENTATION_PLAN.md).
+[IMPLEMENTATION 1.7]({{ '/implementation/' | relative_url }}), [§10.5]({{ '/implementation/' | relative_url }}).
 
 | Strategy | Use when |
 |----------|----------|
@@ -358,7 +365,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ### 4.4 `audit_logs`
 
-[§10](./DOCUMENTATION.md#10-security-architecture), [IMPLEMENTATION 2.4](./IMPLEMENTATION_PLAN.md).
+[§10]({{ '/documentation/' | relative_url }}#10-security-architecture), [IMPLEMENTATION 2.4]({{ '/implementation/' | relative_url }}).
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -377,7 +384,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ### 4.5 `otp_verifications` (optional)
 
-[IMPLEMENTATION 2.6](./IMPLEMENTATION_PLAN.md).
+[IMPLEMENTATION 2.6]({{ '/implementation/' | relative_url }}).
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -396,7 +403,7 @@ Maps **`Job`** ([API §6.2](./API_DOCUMENTATION.md#62-job)). Operational collect
 
 ### 5.1 `payment_intents` / PSP events
 
-[§11](./DOCUMENTATION.md#11-payments--wallet), [IMPLEMENTATION 4.2](./IMPLEMENTATION_PLAN.md).
+[§11]({{ '/documentation/' | relative_url }}#11-payments--wallet), [IMPLEMENTATION 4.2]({{ '/implementation/' | relative_url }}).
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -423,7 +430,7 @@ Tie to `orders.escrow_*` or split: `order_id`, `amount`, `status`, `released_at`
 
 ### 5.3 Receipts
 
-[§44](./DOCUMENTATION.md#44-trust-payments--engagement), [4.5](./IMPLEMENTATION_PLAN.md): `receipt_id`, `receipt_issued_at` on `pickup_requests`; add `receipt_pdf_url` if stored.
+[§44]({{ '/documentation/' | relative_url }}#44-trust-payments--engagement), [4.5]({{ '/implementation/' | relative_url }}): `receipt_id`, `receipt_issued_at` on `pickup_requests`; add `receipt_pdf_url` if stored.
 
 ---
 
@@ -431,7 +438,7 @@ Tie to `orders.escrow_*` or split: `order_id`, `amount`, `status`, `released_at`
 
 ### 6.1 `disputes`
 
-[§25](./DOCUMENTATION.md#25-dispute--support-system), [IMPLEMENTATION 11](./IMPLEMENTATION_PLAN.md).
+[§25]({{ '/documentation/' | relative_url }}#25-dispute--support-system), [IMPLEMENTATION 11]({{ '/implementation/' | relative_url }}).
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -467,7 +474,7 @@ Tie to `orders.escrow_*` or split: `order_id`, `amount`, `status`, `released_at`
 
 ### 7.1 `notifications`
 
-[§8](./DOCUMENTATION.md#8-database-schema-detailed), [§14](./DOCUMENTATION.md#14-notifications), **`AppNotification`** [API §6.5](./API_DOCUMENTATION.md#65-appnotification-not-yet-called-over-http).
+[§8]({{ '/documentation/' | relative_url }}#8-database-schema-detailed), [§14]({{ '/documentation/' | relative_url }}#14-notifications), **`AppNotification`** [API §6.5](./API_DOCUMENTATION.md#65-appnotification-not-yet-called-over-http).
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -486,7 +493,7 @@ Tie to `orders.escrow_*` or split: `order_id`, `amount`, `status`, `released_at`
 
 ### 7.2 Push / email outbox (optional)
 
-`notification_outbox`: `channel`, `payload`, `status`, `sent_at` for queues [§35](./DOCUMENTATION.md#35-performance-optimization-strategy).
+`notification_outbox`: `channel`, `payload`, `status`, `sent_at` for queues [§35]({{ '/documentation/' | relative_url }}#35-performance-optimization-strategy).
 
 ---
 
@@ -494,7 +501,7 @@ Tie to `orders.escrow_*` or split: `order_id`, `amount`, `status`, `released_at`
 
 ### 8.1 `chat_threads`
 
-[IMPLEMENTATION 6.4](./IMPLEMENTATION_PLAN.md), [§43](./DOCUMENTATION.md#43-mobile-near-term-roadmap-flutter).
+[IMPLEMENTATION 6.4]({{ '/implementation/' | relative_url }}), [§43]({{ '/documentation/' | relative_url }}#43-mobile-near-term-roadmap-flutter).
 
 | Column | Type | Notes |
 |--------|------|--------|
@@ -521,7 +528,7 @@ Tie to `orders.escrow_*` or split: `order_id`, `amount`, `status`, `released_at`
 
 ### 9.1 `points_ledger` / `badges`
 
-[§19](./DOCUMENTATION.md#19-gamification), [IMPLEMENTATION 10](./IMPLEMENTATION_PLAN.md).
+[§19]({{ '/documentation/' | relative_url }}#19-gamification), [IMPLEMENTATION 10]({{ '/implementation/' | relative_url }}).
 
 - **`points_ledger`:** `user_id`, `delta`, `reason`, `source_type`, `source_id`, `created_at`.
 - **`user_badges`:** `user_id`, `badge_code`, `earned_at`.
@@ -567,7 +574,7 @@ High-level tables to plan migrations when each phase lands; not all are required
 | **Geo (bounding box / nearby)** | `waste_listings`, `pickup_requests` | Composite `(latitude, longitude)` rarely optimal alone; **PostgreSQL:** GiST on `ll_to_earth` / PostGIS `GEOGRAPHY`; **MySQL 8:** `SPATIAL` POINT + `ST_Distance_Sphere` or app-level bbox filter on `(latitude, longitude)` with latitude/longitude range indexes |
 | **Full-text search** | `waste_listings`, `users` (display) | Optional `FULLTEXT` (MySQL) or `tsvector` (PostgreSQL) on title/location fields when search ships |
 
-**Additional practices:** Partial indexes where helpful (e.g. unread `notifications` where `read_at IS NULL`); keyset pagination covering indexes on list feeds (`created_at`, `id`); partition high-volume time-series (`location_pings`, `audit_logs`, ledger) when volume warrants; **read replicas** for reporting; **warehouse** for BI [§34](./DOCUMENTATION.md#34-data-warehouse--big-data). Compliance: soft deletes on PII-heavy tables per [§18](./DOCUMENTATION.md#18-legal--compliance).
+**Additional practices:** Partial indexes where helpful (e.g. unread `notifications` where `read_at IS NULL`); keyset pagination covering indexes on list feeds (`created_at`, `id`); partition high-volume time-series (`location_pings`, `audit_logs`, ledger) when volume warrants; **read replicas** for reporting; **warehouse** for BI [§34]({{ '/documentation/' | relative_url }}#34-data-warehouse--big-data). Compliance: soft deletes on PII-heavy tables per [§18]({{ '/documentation/' | relative_url }}#18-legal--compliance).
 
 ---
 
@@ -575,19 +582,19 @@ High-level tables to plan migrations when each phase lands; not all are required
 
 | Topic | Recommendation |
 |--------|----------------|
-| **Caching** | Redis for hot reads, config, marketplace slices [§35](./DOCUMENTATION.md#35-performance-optimization-strategy) |
+| **Caching** | Redis for hot reads, config, marketplace slices [§35]({{ '/documentation/' | relative_url }}#35-performance-optimization-strategy) |
 | **Queues** | Laravel queues for notifications, payouts, webhooks, heavy reports |
 | **Images** | CDN URLs in `location` fields; separate `media_assets` if centralized |
-| **Rate limiting** | At API layer [§10](./DOCUMENTATION.md#10-security-architecture) |
-| **Backups / HA** | [§17](./DOCUMENTATION.md#17-devops--deployment) |
-| **Migrations** | Backward-compatible deploys [IMPLEMENTATION 14.8](./IMPLEMENTATION_PLAN.md) |
+| **Rate limiting** | At API layer [§10]({{ '/documentation/' | relative_url }}#10-security-architecture) |
+| **Backups / HA** | [§17]({{ '/documentation/' | relative_url }}#17-devops--deployment) |
+| **Migrations** | Backward-compatible deploys [IMPLEMENTATION 14.8]({{ '/implementation/' | relative_url }}) |
 
 ---
 
 ## 13. Analytics and warehouse
 
 - **OLTP** tables above serve live operations.
-- **§34** [Data warehouse](./DOCUMENTATION.md#34-data-warehouse--big-data): ETL/ELT to analytics store; avoid heavy aggregates on primary DB.
+- **§34** [Data warehouse]({{ '/documentation/' | relative_url }}#34-data-warehouse--big-data): ETL/ELT to analytics store; avoid heavy aggregates on primary DB.
 
 ---
 
@@ -651,14 +658,14 @@ If you prefer explicit many-to-many instead of only `pickup_requests.order_id` /
 | Table | Notes |
 |-------|--------|
 | **`push_devices`** | `id`, `user_id` FK, `fcm_token`, `platform`, `last_seen_at` — UNIQUE `(user_id, fcm_token)` |
-| **`notification_templates`** | `key`, `locale`, `title`, `body` for localized copy [§42.3](./DOCUMENTATION.md#423-laravel-api--content) |
-| **`notification_outbox`** | Optional queue: `channel`, `payload`, `status`, `sent_at` [§35](./DOCUMENTATION.md#35-performance-optimization-strategy) |
+| **`notification_templates`** | `key`, `locale`, `title`, `body` for localized copy [§42.3]({{ '/documentation/' | relative_url }}#423-laravel-api--content) |
+| **`notification_outbox`** | Optional queue: `channel`, `payload`, `status`, `sent_at` [§35]({{ '/documentation/' | relative_url }}#35-performance-optimization-strategy) |
 
 ### 15.6 Payouts
 
 | Table | Notes |
 |-------|--------|
-| **`withdrawals`** / **`payout_batches`** | Collector/recycler payouts and platform commission rules [§11](./DOCUMENTATION.md#11-payments--wallet) |
+| **`withdrawals`** / **`payout_batches`** | Collector/recycler payouts and platform commission rules [§11]({{ '/documentation/' | relative_url }}#11-payments--wallet) |
 
 ### 15.7 Sessions and auth (framework)
 
@@ -798,6 +805,6 @@ Aligned with [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md) §3 (Bearer access
 | 2.0 | Merged `DATABASE.md` and `DATABASE_DOCUMENTATION.md` into this single file; added §§15–17 (supplemental tables, ER diagram, JSON mapping detail) |
 | 2.1 | Order economics columns + optional `order_line_items`; KYC `kyc_documents`; referral MVP canon; expanded indexes (geo/search); Flutter/API gaps; ER diagram; JSON mapping; §§18–19 integrity and auth |
 
-For execution order, see [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) Phase 1.
+For execution order, see [Implementation Plan]({{ '/implementation/' | relative_url }}) Phase 1 (repo: `IMPLEMENTATION_PLAN.md`).
 
-For API shapes, see [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md). For product sections **1–47**, see [`DOCUMENTATION.md`](./DOCUMENTATION.md).
+For API shapes, see [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md). For product sections **1–47**, see [System Documentation]({{ '/documentation/' | relative_url }}) (repo: `DOCUMENTATION.md`).
