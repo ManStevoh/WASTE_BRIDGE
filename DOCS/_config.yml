@@ -7,6 +7,9 @@ description: Technical Documentation for Waste Bridge Platform
 
 remote_theme: just-the-docs/just-the-docs
 
+# Helps jekyll-github-metadata (used by github-pages build) resolve project name → base path
+repository: ManStevoh/WASTE_BRIDGE
+
 url: https://ManStevoh.github.io
 baseurl: "/WASTE_BRIDGE"
 

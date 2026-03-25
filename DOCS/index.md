@@ -12,9 +12,9 @@ Welcome to the official documentation for **Waste Bridge**.
 
 ## 📚 Documentation
 
-- [API Reference]({% link api.md %})
-- [Implementation Plan]({% link implementation.md %})
-- [Architecture]({% link architecture.md %})
+- [API Reference]({{ '/api/' | relative_url }})
+- [Implementation Plan]({{ '/implementation/' | relative_url }})
+- [Architecture]({{ '/architecture/' | relative_url }})
 
 ---
 
